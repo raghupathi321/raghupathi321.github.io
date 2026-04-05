@@ -706,17 +706,17 @@ document.<span class="fn">getElementById</span>(<span class="str">'bio-container
   <h2>Key Lessons</h2>
 
   <div class="callout info">
-    <strong>🔗 Vulnerability chaining matters</strong>
+    <strong> Vulnerability chaining matters</strong>
     No single bug here was catastrophic in isolation. Path traversal alone gives file read. Hardcoded keys alone are useless without knowing the endpoint. The chain is what causes total compromise — always think about how findings connect.
   </div>
 
   <div class="callout warn">
-    <strong>📋 Blocklists always lose</strong>
+    <strong> Blocklists always lose</strong>
     The developer tried to block <code>cupid.db</code> and <code>.db</code> extensions. But there are infinite ways to reference a file — double encoding, case variation, symlinks, alternate extensions. Allowlists are the only reliable pattern.
   </div>
 
   <div class="callout">
-    <strong>🔍 /proc/self is your friend</strong>
+    <strong> /proc/self is your friend</strong>
     When you have path traversal on a Linux system, <code>/proc/self/cmdline</code> and <code>/proc/self/environ</code> are often the fastest path to app secrets and configuration — no guessing required.
   </div>
 
@@ -724,22 +724,8 @@ document.<span class="fn">getElementById</span>(<span class="str">'bio-container
 
 </div>
 
-<!-- FOOTER -->
-<div class="footer">
-  <p>CTF Writeup · ValenFind Web Challenge</p>
-  <p style="margin-top:4px; color:#aaa;">All techniques performed in a controlled CTF lab environment only.</p>
-  <div class="tags">
-    <span class="tag">#cybersecurity</span>
-    <span class="tag">#ctf</span>
-    <span class="tag">#pathtraversal</span>
-    <span class="tag">#websecurity</span>
-    <span class="tag">#flask</span>
-    <span class="tag">#bugbounty</span>
-    <span class="tag">#ethicalhacking</span>
-    <span class="tag">#infosec</span>
-    <span class="tag">#writeup</span>
-  </div>
-</div>
+
+
 
 </body>
 </html>
