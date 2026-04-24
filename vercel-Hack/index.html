@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vercel Got Owned: A Breakdown — by a Hacker Who Cares</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Syne:wght@400;700;800&family=IBM+Plex+Mono:ital,wght@0,400;0,600;1,400&display=swap');
+
+  :root {
+    --bg: #0a0a0a;
+    --surface: #111111;
+    --border: #1e1e1e;
+    --accent: #00ff88;
+    --accent2: #ff3c3c;
+    --accent3: #ffcc00;
+    --text: #d4d4d4;
+    --muted: #666;
+    --heading: #f0f0f0;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 15px;
+    line-height: 1.85;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* scanline overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.07) 2px,
+      rgba(0,0,0,0.07) 4px
+    );
+    pointer-events: none;
+    z-index: 100;
+  }
+
+  .noise {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    opacity: 0.025;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 99;
+  }
+
+  header {
+    border-bottom: 1px solid var(--border);
+    padding: 1rem 2rem;
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    position: sticky;
+    top: 0;
+    background: rgba(10,10,10,0.95);
+    backdrop-filter: blur(8px);
+    z-index: 50;
+  }
+
+  .logo {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--accent);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+  }
+
+  .logo span { color: var(--accent2); }
+
+  .header-meta {
+    margin-left: auto;
+    font-size: 0.7rem;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+  }
+
+  .blink {
+    animation: blink 1.2s step-end infinite;
+    color: var(--accent);
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  main {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 4rem 2rem 6rem;
+  }
+
+  .tag-row {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 2rem;
+    animation: fadeIn 0.6s ease both;
+  }
+
+  .tag {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    padding: 0.2rem 0.6rem;
+    border: 1px solid;
+  }
+
+  .tag-red   { border-color: var(--accent2); color: var(--accent2); }
+  .tag-green { border-color: var(--accent);  color: var(--accent);  }
+  .tag-yellow{ border-color: var(--accent3); color: var(--accent3); }
+
+  h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(2rem, 6vw, 3.2rem);
+    font-weight: 800;
+    line-height: 1.1;
+    color: var(--heading);
+    margin-bottom: 1.5rem;
+    animation: fadeIn 0.7s ease 0.1s both;
+  }
+
+  h1 em {
+    font-style: normal;
+    color: var(--accent2);
+  }
+
+  .byline {
+    font-size: 0.72rem;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    border-left: 2px solid var(--accent);
+    padding-left: 0.75rem;
+    margin-bottom: 3rem;
+    animation: fadeIn 0.7s ease 0.2s both;
+  }
+
+  .lead {
+    font-size: 1.05rem;
+    color: var(--heading);
+    line-height: 1.9;
+    margin-bottom: 2.5rem;
+    animation: fadeIn 0.7s ease 0.3s both;
+  }
+
+  .terminal-block {
+    background: #0d0d0d;
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    padding: 1.2rem 1.5rem;
+    margin: 2.5rem 0;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.82rem;
+    color: var(--accent);
+    position: relative;
+    animation: fadeIn 0.6s ease both;
+    overflow-x: auto;
+  }
+
+  .terminal-block .prompt { color: var(--muted); }
+  .terminal-block .cmd    { color: #fff; }
+  .terminal-block .out    { color: var(--accent3); }
+  .terminal-block .err    { color: var(--accent2); }
+
+  .terminal-label {
+    position: absolute;
+    top: -0.6rem;
+    left: 1rem;
+    font-size: 0.6rem;
+    background: var(--bg);
+    padding: 0 0.4rem;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  h2 {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--heading);
+    margin: 3rem 0 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+
+  h2::before {
+    content: '//';
+    color: var(--accent);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 1rem;
+  }
+
+  p {
+    margin-bottom: 1.4rem;
+    color: var(--text);
+  }
+
+  .highlight {
+    background: rgba(0,255,136,0.07);
+    border-left: 3px solid var(--accent);
+    padding: 1rem 1.2rem;
+    margin: 2rem 0;
+    font-size: 0.92rem;
+  }
+
+  .highlight.red {
+    background: rgba(255,60,60,0.06);
+    border-color: var(--accent2);
+  }
+
+  .highlight.yellow {
+    background: rgba(255,204,0,0.06);
+    border-color: var(--accent3);
+  }
+
+  .ioc-box {
+    background: #0d0d0d;
+    border: 1px solid var(--accent2);
+    padding: 1.2rem 1.5rem;
+    margin: 2rem 0;
+    position: relative;
+  }
+
+  .ioc-box .ioc-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.62rem;
+    color: var(--accent2);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 0.5rem;
+  }
+
+  .ioc-box code {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.78rem;
+    color: #fff;
+    word-break: break-all;
+  }
+
+  .checklist {
+    list-style: none;
+    margin: 1.2rem 0 2rem;
+    padding: 0;
+  }
+
+  .checklist li {
+    padding: 0.4rem 0;
+    padding-left: 1.6rem;
+    position: relative;
+    font-size: 0.9rem;
+    color: var(--text);
+  }
+
+  .checklist li::before {
+    content: '▸';
+    position: absolute;
+    left: 0;
+    color: var(--accent);
+    font-family: 'Share Tech Mono', monospace;
+  }
+
+  .timeline {
+    margin: 2rem 0;
+    border-left: 1px dashed var(--border);
+    padding-left: 1.5rem;
+  }
+
+  .timeline-item {
+    margin-bottom: 1.5rem;
+    position: relative;
+  }
+
+  .timeline-item::before {
+    content: '';
+    position: absolute;
+    left: -1.58rem;
+    top: 0.4rem;
+    width: 6px; height: 6px;
+    background: var(--accent3);
+    border-radius: 50%;
+  }
+
+  .timeline-date {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.68rem;
+    color: var(--accent3);
+    letter-spacing: 0.1em;
+    margin-bottom: 0.2rem;
+  }
+
+  .timeline-text { font-size: 0.88rem; }
+
+  .divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 3rem 0;
+  }
+
+  .source-footer {
+    margin-top: 4rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--border);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--muted);
+  }
+
+  .source-footer a {
+    color: var(--accent);
+    text-decoration: none;
+    border-bottom: 1px solid rgba(0,255,136,0.3);
+    transition: border-color 0.2s;
+  }
+
+  .source-footer a:hover { border-color: var(--accent); }
+
+  .read-more-block {
+    margin-top: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.72rem;
+    color: var(--muted);
+  }
+
+  .read-more-block::before {
+    content: '→';
+    color: var(--accent);
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  @media (max-width: 600px) {
+    main { padding: 2rem 1.2rem 4rem; }
+    header { padding: 0.8rem 1.2rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="noise"></div>
+
+<header>
+ 
+  <div class="header-meta">APR 2026 · THREAT ANALYSIS</div>
+</header>
+
+<main>
+
+
+
+  <h1>Vercel Got <em>Owned</em>:<br>A Hacker's Breakdown of the April 2026 Breach</h1>
+
+  <div class="byline">April 22, 2026 &nbsp;·&nbsp; 6 min read &nbsp;·&nbsp; Security Analysis</div>
+
+  <p class="lead">
+    A sophisticated attacker didn't brute-force Vercel's servers. They didn't exploit a zero-day in Next.js. They walked in through a tiny third-party AI tool's compromised OAuth app — and that's exactly what makes this incident a masterclass in modern supply-chain attacks.
+  </p>
+
+  <div class="terminal-block">
+    <span class="terminal-label">attack chain · reconstructed</span>
+    <div><span class="prompt">$</span> <span class="cmd">trace_attack --target vercel --date 2026-04</span></div>
+    <div><span class="out">[1] Context.ai OAuth app → COMPROMISED</span></div>
+    <div><span class="out">[2] Vercel employee's Google Workspace → TAKEN OVER</span></div>
+    <div><span class="out">[3] Vercel internal environments accessed → ENV VARS EXPOSED</span></div>
+    <div><span class="err">[!] "Sensitive" vars: PROTECTED · Non-sensitive vars: EXPOSED</span></div>
+  </div>
+
+  <h2>Here's What Actually Happened</h2>
+
+  <p>
+    On April 19, Vercel disclosed that attackers gained unauthorized access to some of their internal systems. But the attack didn't start at Vercel. It started at <strong style="color:#fff;">Context.ai</strong> — a small, third-party AI productivity tool used by a Vercel employee.
+  </p>
+
+  <p>
+    Context.ai's Google Workspace OAuth app was compromised as part of a broader attack, likely affecting hundreds of users across many organizations. Once the attacker had that OAuth token, they used it to hijack the Vercel employee's Google Workspace account entirely — and from there, pivoted into Vercel's internal environments.
+  </p>
+
+  <div class="highlight red">
+    <strong style="color: var(--accent2);">Key Attack Vector:</strong> A third-party AI tool's OAuth app was the Trojan horse. The attacker didn't need Vercel's credentials — they needed the credentials of a tiny tool that had access to a Vercel employee's Google account.
+  </div>
+
+  <h2>What Was Exposed?</h2>
+
+  <p>
+    Vercel uses a tiered environment variable system. Variables marked as <strong style="color:#fff;">"sensitive"</strong> are stored in a way that prevents them from being read back — even by Vercel's own systems. The good news: those appear safe.
+  </p>
+
+  <p>
+    The bad news: non-sensitive environment variables — think API keys, database credentials, signing tokens, auth secrets — were accessible, and a subset of customers had those values potentially exfiltrated. Vercel reached out to the affected customers directly.
+  </p>
+
+  <div class="terminal-block">
+    <span class="terminal-label">env var exposure model</span>
+    <div><span class="prompt">#</span> <span class="cmd">vercel env ls --all</span></div>
+    <div><span class="out">DATABASE_URL       [non-sensitive]  ← POTENTIALLY EXPOSED</span></div>
+    <div><span class="out">STRIPE_API_KEY     [non-sensitive]  ← POTENTIALLY EXPOSED</span></div>
+    <div><span class="out">JWT_SECRET         [non-sensitive]  ← POTENTIALLY EXPOSED</span></div>
+    <div><span class="err">NEXTAUTH_SECRET    [sensitive]      ← ENCRYPTED, LIKELY SAFE</span></div>
+    <div><span class="err">DB_PASSWORD        [sensitive]      ← ENCRYPTED, LIKELY SAFE</span></div>
+  </div>
+
+  <h2>The Attacker Was Good. Very Good.</h2>
+
+  <p>
+    Vercel's own security team described the attacker as <strong style="color:#fff;">"highly sophisticated"</strong> — pointing to their operational velocity and, more tellingly, their detailed understanding of Vercel's internal systems. This wasn't someone fumbling around in the dark.
+  </p>
+
+  <p>
+    They brought in the big guns: Mandiant, multiple additional cybersecurity firms, industry peers, and law enforcement. The scale of that response tells you something about how serious this was.
+  </p>
+
+  <div class="highlight yellow">
+    <strong style="color: var(--accent3);">Threat Intel Note:</strong> The OAuth app used in the attack (<code style="font-size:0.82rem;">110671459871-30f1spbu0hptbs60cb4vsmv79i7bbvqj.apps.googleusercontent.com</code>) is a published IOC. Google Workspace admins should check for its usage immediately.
+  </div>
+
+  <h2>The Attack Timeline</h2>
+
+  <div class="timeline">
+    <div class="timeline-item">
+      <div class="timeline-date">APRIL 19 · 11:04 AM PST</div>
+      <div class="timeline-text">Vercel publishes first IOC for the community to investigate malicious activity in their own environments.</div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-date">APRIL 19 · 6:01 PM PST</div>
+      <div class="timeline-text">Origin of the attack revealed: Context.ai OAuth compromise. New recommendations published.</div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-date">APRIL 20 · 10:59 AM PST</div>
+      <div class="timeline-text">Vercel clarifies definition of "compromised credentials" and adds new remediation guidance.</div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-date">APRIL 20 · 5:32 PM PST</div>
+      <div class="timeline-text">npm packages confirmed uncompromised. MFA guidance published. Product enhancements shipped.</div>
+    </div>
+  </div>
+
+  <h2>The IoC You Need to Check Right Now</h2>
+
+  <p>If your organization uses Google Workspace, open your admin console and check for this OAuth app. Right now. Don't finish reading this post first.</p>
+
+  <div class="ioc-box">
+    <div class="ioc-label">⚠ Indicator of Compromise · Google Workspace OAuth App</div>
+    <code>110671459871-30f1spbu0hptbs60cb4vsmv79i7bbvqj.apps.googleusercontent.com</code>
+  </div>
+
+  <p>This app was used as the initial access vector and may have affected hundreds of users across many organizations — not just Vercel. The blast radius of this attack is likely much wider than a single company.</p>
+
+  <h2>What You Should Do If You're on Vercel</h2>
+
+  <ul class="checklist">
+    <li>Immediately rotate all non-sensitive environment variables — API keys, DB credentials, signing keys, auth tokens. Treat them all as burned.</li>
+    <li>Enable "sensitive" flag on every secret going forward. Vercel now defaults new vars to sensitive-on.</li>
+    <li>Enable multi-factor authentication — an authenticator app or passkey, not just SMS.</li>
+    <li>Review your account activity log and recent deployments for anything unexpected.</li>
+    <li>Ensure Deployment Protection is set to Standard at minimum.</li>
+    <li>Rotate your Deployment Protection tokens if you have them set.</li>
+    <li>Deleting your project is NOT enough. Rotate secrets first, then delete.</li>
+  </ul>
+
+  <div class="highlight">
+    <strong style="color: var(--accent);">The Supply Chain Lesson:</strong> Your security posture is only as strong as the weakest OAuth permission you've ever granted. Every AI tool, every productivity app, every "sign in with Google" — each one is a potential pivot point for an attacker who compromises that third-party first.
+  </div>
+
+  <h2>The Bigger Picture</h2>
+
+  <p>
+    This attack follows a pattern we're seeing more of: attackers targeting the sprawling ecosystem of small SaaS tools that employees casually authorize against their corporate Google or GitHub accounts. Context.ai is tiny. Most employees probably forgot they even authorized it.
+  </p>
+
+  <p>
+    The attacker didn't need to break Vercel's infrastructure. They just needed one OAuth app with a poorly-secured backend, one employee who clicked "Allow," and enough knowledge of Vercel's internal structure to know what to look for once they were in.
+  </p>
+
+  <p>
+    The good news: the npm supply chain was validated as clean, in collaboration with GitHub, Microsoft, npm, and Socket. If you ship packages to npm via Vercel, those have been verified as untampered.
+  </p>
+
+  <p>
+    The bad news: the full scope of exfiltration is still under investigation. Vercel says they'll contact customers if they find further evidence of compromise. Watch your inboxes.
+  </p>
+
+  <hr class="divider">
+
+  <p style="color: var(--muted); font-size: 0.88rem;">
+    Stay paranoid. Rotate your secrets. Audit your OAuth grants. And maybe think twice before that next "Sign in with Google" on a random AI productivity tool.
+  </p>
+
+  <div class="source-footer">
+    <div style="margin-bottom: 0.5rem; color: var(--accent); letter-spacing: 0.1em; font-size: 0.65rem; text-transform: uppercase;">// Primary Source</div>
+    <a href="https://vercel.com/kb/bulletin/vercel-april-2026-security-incident" target="_blank" rel="noopener">
+      https://vercel.com/kb/bulletin/vercel-april-2026-security-incident
+    </a>
+  
+  </div>
+
+</main>
+
+</body>
+</html>
