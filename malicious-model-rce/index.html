@@ -651,27 +651,27 @@ torch.<span class="fn">save</span>(<span class="cl">CalcPoC</span>(), <span clas
         <p>Always use <code>torch.load(path, weights_only=True)</code>. Default since PyTorch 2.6. Allowlists only safe types: tensors, numpy arrays, basic Python primitives.</p>
       </div>
       <div class="mit-card">
-        <div class="mit-icon">🔍</div>
+        <div class="mit-icon"></div>
         <h4>Scan Before Load</h4>
         <p>Use tools like <code>picklescan</code> or <code>modelscan</code> (by ProtectAI) to inspect pickle files for dangerous opcodes before loading.</p>
       </div>
       <div class="mit-card">
-        <div class="mit-icon">📦</div>
+        <div class="mit-icon"></div>
         <h4>Prefer SafeTensors</h4>
         <p>Use Hugging Face's <code>safetensors</code> format instead of <code>.pkl</code>/<code>.pt</code>. It stores only raw tensor data with no executable code path.</p>
       </div>
       <div class="mit-card">
-        <div class="mit-icon">🔒</div>
+        <div class="mit-icon"></div>
         <h4>Verify Checksums</h4>
         <p>Verify SHA256 hashes of downloaded model files against publisher-provided checksums before loading. Never load unsigned model files in production.</p>
       </div>
       <div class="mit-card">
-        <div class="mit-icon">🏖</div>
+        <div class="mit-icon"></div>
         <h4>Sandbox Loading</h4>
         <p>Load untrusted models inside Docker containers, VMs, or restricted environments with no network access and minimal filesystem permissions.</p>
       </div>
       <div class="mit-card">
-        <div class="mit-icon">⚙</div>
+        <div class="mit-icon"></div>
         <h4>Upgrade PyTorch</h4>
         <p>PyTorch ≥ 2.6 sets <code>weights_only=True</code> as the default. Upgrade immediately. Audit any codebase explicitly passing <code>weights_only=False</code>.</p>
       </div>
@@ -686,25 +686,25 @@ torch.<span class="fn">save</span>(<span class="cl">CalcPoC</span>(), <span clas
       <pre><span class="kw">import</span> torch
 <span class="kw">from</span> safetensors.torch <span class="kw">import</span> load_file
 
-<span class="cm"># ✅ Option 1: weights_only=True (PyTorch ≥ 2.0)</span>
+<span class="cm">#  Option 1: weights_only=True (PyTorch ≥ 2.0)</span>
 model_state = torch.<span class="fn">load</span>(<span class="str">"model.pt"</span>, weights_only=<span class="num">True</span>)
 
-<span class="cm"># ✅ Option 2: safetensors format (recommended for distribution)</span>
+<span class="cm"># Option 2: safetensors format (recommended for distribution)</span>
 model_state = <span class="fn">load_file</span>(<span class="str">"model.safetensors"</span>)
 
-<span class="cm"># ✅ Option 3: scan first, then load</span>
+<span class="cm">#  Option 3: scan first, then load</span>
 <span class="kw">from</span> modelscan.scanner <span class="kw">import</span> <span class="cl">ModelScan</span>
 scanner = <span class="cl">ModelScan</span>()
 result = scanner.<span class="fn">scan</span>(<span class="str">"model.pt"</span>)
 <span class="kw">if not</span> result.issues_found:
     model_state = torch.<span class="fn">load</span>(<span class="str">"model.pt"</span>, weights_only=<span class="num">True</span>)
 
-<span class="cm"># ❌ NEVER do this with untrusted files</span>
+<span class="cm">#  NEVER do this with untrusted files</span>
 <span class="cm"># model = torch.load("model.pt", weights_only=False)</span></pre>
     </div>
 
     <div class="callout success">
-      <strong>✅ TL;DR Defense</strong>
+      <strong> TL;DR Defense</strong>
       Upgrade to PyTorch ≥ 2.6, never pass <code>weights_only=False</code> on untrusted files, prefer <code>safetensors</code> format for model distribution, and scan with <code>picklescan</code> or <code>modelscan</code> in your CI/CD pipeline.
     </div>
   </section>
